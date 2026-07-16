@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#0a0a14" />
+  <title>TOPPING RUSH — 60 Sekunden. Fang alles.</title>
+  <meta name="description" content="Event-Arcade: 60 Sekunden Toppings fangen, Bomben und Wespen ausweichen. Bester Versuch zählt — ab aufs Leaderboard!" />
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/src/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- START -->
+    <section id="screen-start" class="screen">
+      <div class="start-inner">
+        <h1 id="logo" class="logo">TOPPING<br />RUSH</h1>
+        <p id="event-name" class="event-name"></p>
+        <p class="tagline">60 Sekunden. Fang alles.</p>
+        <svg class="lale" viewBox="0 0 160 26" aria-hidden="true">
+          <path class="lale-line" d="M4 14 H56" />
+          <path class="lale-line" d="M104 14 H156" />
+          <path class="lale-bloom" d="M80 23 C73 19 68 14 68 7 C73 9 77 12 79 16 C78.5 10 79 5 80 2 C81 5 81.5 10 81 16 C83 12 87 9 92 7 C92 14 87 19 80 23 Z" />
+        </svg>
+        <div id="banner" class="banner" hidden></div>
+        <div class="name-row">
+          <input id="name-input" maxlength="16" placeholder="DEIN NAME" autocomplete="off" spellcheck="false" enterkeyhint="go" />
+        </div>
+        <p id="name-error" class="name-error" hidden>Nur Buchstaben, Zahlen, . _ -</p>
+        <button id="btn-play" class="btn-big">PLAY</button>
+        <div id="top3" class="top3"></div>
+        <footer class="foot">
+          <button id="btn-legal" class="linklike">Impressum &amp; Datenschutz</button>
+          <span class="powered">powered by <img src="/osai-logo.png" alt="OsAI" class="osai-mark" /> OsAI</span>
+        </footer>
+      </div>
+    </section>
+
+    <!-- COUNTDOWN -->
+    <section id="screen-countdown" class="screen" hidden>
+      <div id="count-num" class="count-num">3</div>
+      <p id="count-hint" class="count-hint"></p>
+    </section>
+
+    <!-- GAME -->
+    <section id="screen-game" class="screen" hidden>
+      <canvas id="game-canvas"></canvas>
+      <div id="hud">
+        <div class="hud-cell"><span class="hud-label">SCORE</span><span id="hud-score">0</span></div>
+        <div class="hud-cell hud-combo"><span id="hud-combo"></span></div>
+        <div class="hud-cell"><span class="hud-label">ZEIT</span><span id="hud-timer">60</span></div>
+      </div>
+      <button id="btn-mute" class="btn-mute" aria-label="Ton an/aus"></button>
+    </section>
+
+    <!-- RESULT -->
+    <section id="screen-result" class="screen" hidden>
+      <div class="result-inner">
+        <svg class="lale lale-small" viewBox="0 0 160 26" aria-hidden="true">
+          <path class="lale-line" d="M4 14 H56" />
+          <path class="lale-line" d="M104 14 H156" />
+          <path class="lale-bloom" d="M80 23 C73 19 68 14 68 7 C73 9 77 12 79 16 C78.5 10 79 5 80 2 C81 5 81.5 10 81 16 C83 12 87 9 92 7 C92 14 87 19 80 23 Z" />
+        </svg>
+        <p class="res-label">DEIN SCORE</p>
+        <div id="res-score" class="res-score">0</div>
+        <div id="res-newbest" class="res-newbest" hidden>NEUE BESTMARKE!</div>
+        <div id="res-rank" class="res-rank"></div>
+        <div id="res-delta" class="res-delta"></div>
+        <div id="res-best" class="res-best"></div>
+        <div id="res-attempt" class="res-attempt"></div>
+        <div id="res-stat" class="res-stat"></div>
+        <button id="btn-again" class="btn-big">NOCHMAL</button>
+        <ol id="res-top10" class="res-top10"></ol>
+      </div>
+    </section>
+
+    <!-- LEGAL -->
+    <section id="screen-legal" class="screen legal" hidden>
+      <div class="legal-inner">
+        <button id="btn-legal-close" class="linklike">← zurück</button>
+        <div id="legal-content"></div>
+      </div>
+    </section>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

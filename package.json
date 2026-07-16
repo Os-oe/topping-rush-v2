@@ -1,0 +1,24 @@
+{
+  "name": "topping-rush",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "serve": "npm run build && node server.js",
+    "test": "playwright test --project=mobile",
+    "test:2x": "playwright test --project=mobile && playwright test --project=mobile",
+    "test:live": "LIVE_URL=https://topping-rush.demo.osai.solutions playwright test tests/live.spec.js --project=live"
+  },
+  "dependencies": {
+    "@upstash/ratelimit": "^2.0.5",
+    "@upstash/redis": "^1.34.9"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.53.0",
+    "qr-creator": "^1.0.0",
+    "vite": "^6.3.5"
+  }
+}

@@ -1,0 +1,32 @@
+/* Lokale Fonts — kein CDN-Flackern auf Event-WLAN */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 700 900; /* Variable Font */
+  font-display: swap;
+  src: url('/fonts/orbitron-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Bungee';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/bungee-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+2022, U+2013-2014;
+}
+/* latin-ext: Ş für „ŞERBET-RUSH ×2!" (Nachtrag v1.1) */
+@font-face {
+  font-family: 'Bungee';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/bungee-400-ext.woff2') format('woff2');
+  unicode-range: U+0100-024F, U+0259, U+1E00-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0;
+}
+@font-face {
+  font-family: 'Press Start 2P';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/pressstart2p-400.woff2') format('woff2');
+}

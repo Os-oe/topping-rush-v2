@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TOPPING RUSH — Leaderboard</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/src/styles.css" />
+  <link rel="stylesheet" href="/src/board.css" />
+</head>
+<body class="board-body">
+  <div id="board-start" class="board-start">
+    <h1 class="logo">TOPPING RUSH</h1>
+    <button id="btn-board-start" class="btn-big">BOARD STARTEN</button>
+    <p class="board-hint">Ein Tap: Vollbild + Display bleibt an</p>
+  </div>
+  <main id="board" hidden>
+    <header id="board-header">
+      <div class="board-title-wrap">
+        <h1 class="board-title">TOPPING RUSH</h1>
+        <p id="board-event" class="board-event"></p>
+      </div>
+      <svg class="lale lale-board" viewBox="0 0 160 26" aria-hidden="true">
+        <path class="lale-line" d="M4 14 H56" />
+        <path class="lale-line" d="M104 14 H156" />
+        <path class="lale-bloom" d="M80 23 C73 19 68 14 68 7 C73 9 77 12 79 16 C78.5 10 79 5 80 2 C81 5 81.5 10 81 16 C83 12 87 9 92 7 C92 14 87 19 80 23 Z" />
+      </svg>
+      <div class="banner-arch" style="display:none">
+        <svg class="arch arch-wide" viewBox="0 0 400 64" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M5 62 L5 34 Q5 8 200 4 Q395 8 395 34 L395 62" />
+        </svg>
+        <div id="board-banner" class="board-banner"></div>
+      </div>
+      <span id="offline-badge" class="offline-badge" hidden>OFFLINE</span>
+    </header>
+    <section class="board-main">
+      <ol id="board-list" class="board-list"></ol>
+      <aside class="board-side">
+        <div class="arch-frame">
+          <svg class="arch" viewBox="0 0 100 132" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M5 129 L5 50 Q5 15 50 4 Q95 15 95 50 L95 129" />
+          </svg>
+          <div class="qr-tile">
+            <div id="qr"></div>
+          </div>
+        </div>
+        <p class="qr-label">SCAN &amp; SPIEL MIT</p>
+        <p class="powered">powered by <img src="/osai-logo.png" alt="OsAI" class="osai-mark" /> OsAI</p>
+      </aside>
+    </section>
+  </main>
+  <script type="module" src="/src/board.js"></script>
+</body>
+</html>

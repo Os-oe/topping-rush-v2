@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TOPPING RUSH — Admin</title>
+  <link rel="stylesheet" href="/fonts/fonts.css" />
+  <link rel="stylesheet" href="/src/styles.css" />
+  <link rel="stylesheet" href="/src/admin.css" />
+</head>
+<body class="admin-body">
+  <main class="admin-wrap">
+    <h1>TOPPING RUSH — Admin</h1>
+
+    <section id="pin-gate">
+      <label for="pin-input">PIN</label>
+      <input id="pin-input" inputmode="numeric" maxlength="4" placeholder="••••" autocomplete="off" />
+      <button id="btn-pin" class="btn-big">LOGIN</button>
+      <p id="pin-error" class="name-error" hidden>Falsche PIN</p>
+    </section>
+
+    <section id="admin-panel" hidden>
+      <div class="admin-card">
+        <h2>Event-Name</h2>
+        <input id="event-input" maxlength="60" placeholder="Kermes • Fatih Camii Fellbach" />
+        <button id="btn-event" class="btn-small">Speichern</button>
+      </div>
+      <div class="admin-card">
+        <h2>Gewinn-Banner</h2>
+        <input id="banner-input" maxlength="120" placeholder="z. B. Platz 1 heute Abend: 1 Getränk aufs Haus" />
+        <button id="btn-banner" class="btn-small">Speichern</button>
+      </div>
+      <div class="admin-card">
+        <h2>Rundenlänge</h2>
+        <div class="dur-row">
+          <input id="duration-input" type="range" min="60" max="90" step="5" value="60" />
+          <span id="duration-val">60 s</span>
+        </div>
+        <button id="btn-duration" class="btn-small">Speichern</button>
+      </div>
+      <div class="admin-card danger">
+        <h2>Board-Reset</h2>
+        <p>Löscht alle Scores + Namen unwiderruflich.</p>
+        <button id="btn-reset" class="btn-small btn-danger">RESET</button>
+        <button id="btn-reset-confirm" class="btn-small btn-danger" hidden>WIRKLICH? — JA, LÖSCHEN</button>
+      </div>
+      <div class="admin-card">
+        <h2>Live-Scores</h2>
+        <ol id="admin-list" class="res-top10"></ol>
+      </div>
+      <p id="admin-msg" class="admin-msg"></p>
+    </section>
+  </main>
+  <script type="module" src="/src/admin.js"></script>
+</body>
+</html>

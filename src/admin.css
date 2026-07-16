@@ -1,0 +1,16 @@
+/* Admin — funktional, mobil bedienbar */
+.admin-body { overflow-y: auto; }
+.admin-wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px 60px; display: flex; flex-direction: column; gap: 18px; }
+.admin-wrap h1 { font-size: 1.4rem; }
+#pin-gate { display: flex; flex-direction: column; gap: 12px; max-width: 260px; }
+#pin-gate input { padding: 12px; font-size: 1.6rem; text-align: center; letter-spacing: 0.5em; background: #11121f; border: 2px solid #2a2c44; border-radius: 12px; color: #eaf6ff; width: 100%; }
+#admin-panel { display: flex; flex-direction: column; gap: 16px; }
+.admin-card { background: #11121f; border: 1px solid #2a2c44; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.admin-card h2 { font-size: 1rem; }
+.admin-card input[type="text"], .admin-card input:not([type]) { padding: 10px 12px; background: #0a0a14; border: 1px solid #2a2c44; border-radius: 10px; color: #eaf6ff; width: 100%; }
+.btn-small { padding: 10px 18px; border: none; border-radius: 10px; background: #00F0FF; color: #06121a; font-weight: 700; cursor: pointer; align-self: flex-start; }
+.btn-danger { background: #FF3131; color: #fff; }
+.danger p { opacity: 0.7; font-size: 0.85rem; }
+.dur-row { display: flex; align-items: center; gap: 14px; }
+.dur-row input { flex: 1; }
+.admin-msg { min-height: 1.2em; font-weight: 700; }
