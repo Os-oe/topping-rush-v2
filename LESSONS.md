@@ -92,6 +92,42 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
   mit ASCII-`"` im Text sprengt das Quoting — Message-File (`git commit -F`)
   ist die robuste Form für lange deutsche Messages.
 
+## Nachtrag v2.4 (18.07., Update-Session — Board ohne Gate, ehrlicher Rang, Runden-Zähler, Presence)
+
+- **Best-of-API + Runden-UI = Framing-Falle:** Die API meldet nach POST /score
+  den Rang des BESTWERTS — wer das ungefiltert als Rundenergebnis feiert, lügt
+  den Spieler an („PLATZ 1!" nach schlechter Runde, live vom User entdeckt).
+  Regel: Jubel-Copy IMMER an `isNewBest` koppeln, sonst ehrlich beschriften
+  („Dein Bestwert: X — Platz N" / „Diese Runde: Y — dein Bestwert zählt weiter").
+- **Suite < 60 s = EIN Rate-Limit-Fenster:** Läuft die ganze Suite in unter
+  60 s, teilen sich ALLE Default-Bucket-Submits ein einziges Sliding-Window
+  (10/60 s) — zwei neue Tests kippten den 10. Submit in 429. Fix-Muster:
+  API-Seed-Submits per `x-forwarded-for` auf eigene Buckets, nur echte
+  Browser-Submits bleiben auf dem Default-Bucket (der Rate-Limit-Test testet
+  weiter das echte Verhalten).
+- **Poll-ab-Load bricht fetch-Stubs:** Sobald das Board beim Seiten-Load pollt,
+  kommt `page.evaluate`-Stubbing zu spät (erster Poll ist schon durch) —
+  `page.route('**/api/leaderboard')` VOR `goto` ist die robuste Form.
+- **Element in volle Flex-Spalte = Layout-Kipper:** Die Presence-Zeile als
+  Spaltenkind schob die ohnehin höhen-volle Board-Seitenspalte in den Header
+  (Banner-Überlappung). Fix: absolutes Overlay im leeren Bogen-Freiraum —
+  kostet 0 Spaltenhöhe. Bestätigt die v2.3-Lehre: CSS-/Layout-Änderungen
+  IMMER per Screenshot sichten, die Funktions-Suite sieht Optik nicht.
+- **Gate-los heißt mobil-tauglich:** Ohne Start-Overlay landen QR-Neugierige
+  direkt auf /board — das TV-only-vh-Layout war auf 390er-Portrait unbrauchbar.
+  Media-Query < 700 px (Spalten stapeln, vh→px-Typo, Deko-Bogen weg) gehört
+  zum „Gate weg"-Umbau dazu, nicht als Extra.
+- **TTL testbar machen statt warten:** Presence-TTL (Prod 100 s) via
+  `PLAYING_TTL_S`-ENV im Playwright-webServer auf 2 s — der Ablauf-Test
+  wartet 2,6 s statt 100. Redis-SETEX und Memory-Map lesen dieselbe Konstante.
+- **Presence-Asserts live tolerant bauen:** Auf dem Live-Board dürfen ECHTE
+  Spieler in der Playing-Zeile stehen — `not.toContainText(NAME)` statt
+  `toBeHidden()`. Dafür muss der Render den Text beim Verstecken LEEREN,
+  sonst matcht der stale Text des versteckten Elements.
+- **Fire-and-forget-Ping-Muster:** `pingPlaying()` in try/catch + `.catch()`,
+  kein await im Spielstart-Pfad — Presence kann komplett ausfallen, ohne dass
+  ein Spieler es merkt. Server räumt via Score-Submit + TTL doppelt auf.
+
 ## Kosten (Ist)
 
 | Posten | Menge | Ist |
@@ -99,4 +135,5 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
 | NB2-Sprites (Anker 1 + i2i-Serie 12, 0 Retries) | 13 Renders | 0,65 € |
 | NB2 Bomben-Sprite v2.1 (i2i auf Anker, 0 Retries) | 1 Render | 0,05 € |
 | Audio (SFX + Suno-Loop aus V1; Poff/Kling = WebAudio) | — | 0,00 € |
-| **Gesamt (inkl. v2.1+v2.2)** | | **0,70 €** (Cap 10 €) |
+| Nachträge v2.3 + v2.4 (reiner Code, keine Renders) | — | 0,00 € |
+| **Gesamt (inkl. v2.1–v2.4)** | | **0,70 €** (Cap 10 €) |
