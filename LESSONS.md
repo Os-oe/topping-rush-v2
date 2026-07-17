@@ -63,10 +63,40 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
   Vercel-Projekt `topping-rush-v2` hängen (liefert `KV_REST_API_URL`/`_TOKEN`)
   und redeployen — bis dahin `mode:"memory"` (Cold Start leert das Board).
 
+## Nachtrag v2.1 + v2.2 (17.07., selbe Session — Bombe, Warn-Signatur, Legende, Füllstand, Celebration)
+
+- **Nachtrag-Pattern 2× validiert, auch gestapelt:** v2.1 (Bombe/−30, Warn-Ringe,
+  Legende) und v2.2 (Füllstand, Board-Celebration) kamen als CONCEPT-Nachträge
+  in die laufende Update-Session und gingen in EINEM Deploy raus — Gates je
+  Nachtrag erneut fahren, ein gemeinsamer Abschluss-Report reicht.
+- **Serien-Anker trägt auch Monate „fremde" Motive:** Comic-Bombe (kein
+  Lebensmittel) saß im 1. i2i-Render auf den nar-Anker — 4. Bestätigung des
+  Musters; Kosten 0,05 € statt Retry-Kaskade.
+- **Rote Silhouette via `source-in` = Warn-Tint-Kante ohne Blur:** Sprite-Kopie
+  rot füllen, minimal größer HINTER das Sprite — konturierte Doppellinie im
+  scharfen V2-Look. Cache erst ab `entry.ready`, sonst friert der
+  Fallback-Blob als Silhouette ein.
+- **Transiente UI-Zustände (LOS!-Fenster 380 ms) mit `polling: 'raf'` testen:**
+  Playwrights Standard-Visibility-Polling (~380-ms-Raster) verpasst kurze
+  Fenster komplett — `waitForFunction(..., { polling: 'raf' })` fängt sie.
+- **Board-Features mit fetch-Stub testen statt echter Submits:** Das
+  Rate-Limit-Budget der Suite (10/60 s) ist knapp kalkuliert; der
+  Celebration-Integrationstest stubbt `window.fetch` vor Board-Start und
+  testet den vollen Poll→Detect→Feier-Pfad ohne einen einzigen API-Call.
+- **Balancing: −30-Bombe und +30-Füll-Bonus kompensieren sich fast:** Die
+  v2.2-Bänder (Casual 350–600 / Profi 1000–1500) wurden ohne Drehen einer
+  Stellschraube getroffen (Bad-Anteil blieb 15 %, Combo-Rampe unverändert).
+- **`vercel alias set` braucht `--scope os-oes-projects`:** ohne Scope-Flag
+  „You don't have access to the domain" — obwohl dieselbe CLI deployt hat.
+- **Typografische Anführungszeichen in Commit-Messages:** `git commit -m "…"`
+  mit ASCII-`"` im Text sprengt das Quoting — Message-File (`git commit -F`)
+  ist die robuste Form für lange deutsche Messages.
+
 ## Kosten (Ist)
 
 | Posten | Menge | Ist |
 |---|---|---|
 | NB2-Sprites (Anker 1 + i2i-Serie 12, 0 Retries) | 13 Renders | 0,65 € |
-| Audio (SFX + Suno-Loop aus V1) | — | 0,00 € |
-| **Gesamt** | | **0,65 €** (Schätzung 0,85–1,20 €, Cap 10 €) |
+| NB2 Bomben-Sprite v2.1 (i2i auf Anker, 0 Retries) | 1 Render | 0,05 € |
+| Audio (SFX + Suno-Loop aus V1; Poff/Kling = WebAudio) | — | 0,00 € |
+| **Gesamt (inkl. v2.1+v2.2)** | | **0,70 €** (Cap 10 €) |
