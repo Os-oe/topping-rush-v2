@@ -139,6 +139,27 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
   await expect(page.locator('#res-delta')).toContainText('hinter Platz 1');
   await expect(page.locator('#res-top10 li')).toHaveCount(2);
   await expect(page.locator('#res-top10 li.me .lb-name')).toHaveText('FlowBot');
+
+  // v2.4: 2. Runde SCHLECHTER als Bestwert (91 < 233) → KEIN „Platz N"-Jubel,
+  // sondern ehrliche Beschriftung: Bestwert-Rang + „dein Bestwert zählt weiter"
+  await page.evaluate(() => {
+    window.__TR.newGame({ autoSpawn: false });
+    const g = window.__TR.game;
+    g.stop();
+    // 7 Catches = 91 (Rampe 10..16), kein Füll-Bonus
+    for (let i = 0; i < 7; i++) {
+      g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
+      g.update(1 / 60);
+    }
+    g.t = g.duration + 0.01;
+    g.update(1 / 60);
+    return 1;
+  });
+  await expect(page.locator('#screen-result')).toBeVisible();
+  await expect(page.locator('#res-rank')).toHaveText('Dein Bestwert: 233 — Platz 2', { timeout: 5000 });
+  await expect(page.locator('#res-delta')).toContainText('Diese Runde: 91 — dein Bestwert zählt weiter');
+  await expect(page.locator('#res-delta')).toContainText('hinter Platz 1'); // deltaUp bleibt (bezieht sich auf Bestwert)
+  await expect(page.locator('#res-newbest')).toBeHidden();
 });
 
 test('/board: Start-Geste → Board sichtbar, QR-Kachel weiß, Daten gepollt', async ({ page, request }) => {

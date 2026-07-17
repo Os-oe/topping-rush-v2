@@ -214,14 +214,25 @@ function renderResultServer(stats, res) {
   }
   delta.classList.remove('offline');
   state.top = res.top || state.top;
-  if (res.rank === 1) {
-    $('res-rank').textContent = 'PLATZ 1!';
-    $('res-delta').textContent = 'Du führst das Board an!';
-  } else if (res.rank) {
-    $('res-rank').textContent = `Platz ${res.rank}`;
-    if (res.deltaUp && res.deltaUp.points > 0) {
-      $('res-delta').textContent = `Nur ${res.deltaUp.points} Punkte hinter Platz ${res.deltaUp.rank}!`;
+  // v2.4: Die API meldet den Rang des BESTWERTS (Best-of), nicht der Runde.
+  // Jubel-Rang deshalb NUR bei echter neuer Bestmarke — sonst ehrlich beschriften.
+  if (res.isNewBest) {
+    if (res.rank === 1) {
+      $('res-rank').textContent = 'PLATZ 1!';
+      $('res-delta').textContent = 'Du führst das Board an!';
+    } else if (res.rank) {
+      $('res-rank').textContent = `Platz ${res.rank}`;
+      if (res.deltaUp && res.deltaUp.points > 0) {
+        $('res-delta').textContent = `Nur ${res.deltaUp.points} Punkte hinter Platz ${res.deltaUp.rank}!`;
+      }
     }
+  } else if (res.rank) {
+    $('res-rank').textContent = `Dein Bestwert: ${res.best} — Platz ${res.rank}`;
+    let msg = `Diese Runde: ${stats.score} — dein Bestwert zählt weiter`;
+    if (res.deltaUp && res.deltaUp.points > 0) {
+      msg += ` · Nur ${res.deltaUp.points} Punkte hinter Platz ${res.deltaUp.rank}!`;
+    }
+    $('res-delta').textContent = msg;
   }
   if (res.isNewBest && res.tries > 1) {
     $('res-newbest').hidden = false; // Versuch #1 ist keine „Bestmarke"
