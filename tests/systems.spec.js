@@ -20,7 +20,12 @@ test('Leaderboard: leer → Defaults', async ({ request }) => {
 });
 
 test('Score: Best-of pro Name (ZADD-GT-Semantik) + Rang + Delta', async ({ request }) => {
-  let r = await request.post('/api/score', { data: { name: 'Alina', score: 500 } });
+  // Eigener Rate-Limit-Bucket via x-forwarded-for: Die Suite läuft in < 60 s,
+  // ALLE Default-Bucket-Submits teilen sich also EIN Sliding-Window (10/60 s).
+  // API-Seeds bekommen deshalb eigene Buckets; nur echte Browser-Submits
+  // (UI-Flow, audio, greybox) bleiben auf dem Default-Bucket.
+  const headers = { 'x-forwarded-for': '10.99.0.3' };
+  let r = await request.post('/api/score', { data: { name: 'Alina', score: 500 }, headers });
   let j = await r.json();
   expect(j.rank).toBe(1);
   expect(j.isNewBest).toBe(true);
@@ -28,14 +33,14 @@ test('Score: Best-of pro Name (ZADD-GT-Semantik) + Rang + Delta', async ({ reque
   expect(j.deltaUp).toBeNull();
 
   // schlechterer zweiter Versuch → Bestmarke bleibt
-  r = await request.post('/api/score', { data: { name: 'Alina', score: 300 } });
+  r = await request.post('/api/score', { data: { name: 'Alina', score: 300 }, headers });
   j = await r.json();
   expect(j.isNewBest).toBe(false);
   expect(j.best).toBe(500);
   expect(j.tries).toBe(2);
 
   // zweiter Spieler knapp dahinter → Delta-Framing-Daten
-  r = await request.post('/api/score', { data: { name: 'Ben', score: 488 } });
+  r = await request.post('/api/score', { data: { name: 'Ben', score: 488 }, headers });
   j = await r.json();
   expect(j.rank).toBe(2);
   expect(j.deltaUp).toEqual({ rank: 1, points: 12 }); // „Nur 12 Punkte hinter Platz 1!"
@@ -43,7 +48,7 @@ test('Score: Best-of pro Name (ZADD-GT-Semantik) + Rang + Delta', async ({ reque
   expect(j.top[1].name).toBe('Ben');
 
   // besserer Versuch → neue Bestmarke
-  r = await request.post('/api/score', { data: { name: 'Ben', score: 505 } });
+  r = await request.post('/api/score', { data: { name: 'Ben', score: 505 }, headers });
   j = await r.json();
   expect(j.isNewBest).toBe(true);
   expect(j.rank).toBe(1);
@@ -70,8 +75,8 @@ test('Schutz: Whitelist-Regex, Blockliste, Score-Deckel 3000', async ({ request 
     expect(r.status(), JSON.stringify(data)).toBe(400);
     expect((await r.json()).error).toBe(error);
   }
-  // 16-Zeichen-Kappung serverseitig
-  const r = await request.post('/api/score', { data: { name: 'A'.repeat(30), score: 100 } });
+  // 16-Zeichen-Kappung serverseitig (eigener Bucket — s. Best-of-Test)
+  const r = await request.post('/api/score', { data: { name: 'A'.repeat(30), score: 100 }, headers: { 'x-forwarded-for': '10.99.0.4' } });
   const j = await r.json();
   expect(j.ok).toBe(true);
   expect(j.top.find((e) => e.name === 'A'.repeat(16))).toBeTruthy();
@@ -119,7 +124,7 @@ test('Admin: PIN-Gate, Banner, Rundenlänge, Reset', async ({ request }) => {
 
 test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Screen', async ({ page, request }) => {
   await request.post('/api/admin', { data: { pin: PIN, action: 'reset' } });
-  await request.post('/api/score', { data: { name: 'Champ', score: 300 } });
+  await request.post('/api/score', { data: { name: 'Champ', score: 300 }, headers: { 'x-forwarded-for': '10.99.0.5' } });
 
   await page.goto('/?seed=42');
   await page.evaluate(() => {
@@ -205,7 +210,7 @@ test('Playing-Presence: Ping → Liste (alphabetisch, max 6), Submit löscht, TT
 
 test('/board: ohne Gate sofort sichtbar, QR-Kachel weiß, Daten ab Load gepollt', async ({ page, request }) => {
   await request.post('/api/admin', { data: { pin: PIN, action: 'reset' } });
-  await request.post('/api/score', { data: { name: 'BoardStar', score: 777 } });
+  await request.post('/api/score', { data: { name: 'BoardStar', score: 777 }, headers: { 'x-forwarded-for': '10.99.0.6' } });
   await request.post('/api/admin', { data: { pin: PIN, action: 'banner', value: 'Sieger bekommt 1 Drink!' } });
 
   await page.goto('/board');
