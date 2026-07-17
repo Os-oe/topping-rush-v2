@@ -30,8 +30,8 @@ test('Live: Start-Screen, Legal, API erreichbar (mode:redis)', async ({ page, re
   await expect(page.locator('#legal-content')).toContainText('DE462559965');
 });
 
-test('Live: Board offen → Playing-Zeile bei Rundenstart, Score ohne Reload ≤ 4 s, Presence weg nach Submit', async ({ page, context }) => {
-  test.setTimeout(120_000);
+test('Live v2.5: zwei Runden desselben Namens BEIDE in Top 10, Ränge listen-konsistent, Alt-Einträge unversehrt, Board live ohne Reload', async ({ page, context }) => {
+  test.setTimeout(150_000);
 
   // v2.4: Board ZUERST öffnen — ohne Gate sofort sichtbar, pollt ab Load
   const board = await context.newPage();
@@ -70,8 +70,8 @@ test('Live: Board offen → Playing-Zeile bei Rundenstart, Score ohne Reload ≤
   expect(bomb.streak).toBe(0);
   expect(bomb.ready).toBe(true);
 
-  // Runde deterministisch verkürzen: 25 echte Catches (~450 Punkte — landet
-  // sicher in den Top 10 des Live-Boards), dann Zeit ablaufen lassen
+  // Runde 1 deterministisch verkürzen: 25 echte Catches (Endscore 459 —
+  // landet sicher in den Top 10 des Live-Boards), dann Zeit ablaufen lassen
   await page.evaluate(() => {
     const g = window.__TR.game;
     g.stop();
@@ -84,12 +84,16 @@ test('Live: Board offen → Playing-Zeile bei Rundenstart, Score ohne Reload ≤
     return 1;
   });
   await expect(page.locator('#screen-result')).toBeVisible();
-  // Server-Antwort angekommen: Rang sichtbar (nicht Offline-Hinweis) —
-  // NAME ist frisch → isNewBest → Jubel-Pfad zeigt „Platz N"
+  // Server-Antwort angekommen: Rang sichtbar (v2.5: Rang-Jubel gilt der Runde)
   await expect(page.locator('#res-rank')).toContainText(/Platz/i, { timeout: 10_000 });
   await expect(page.locator('#res-top10 li.me .lb-name')).toHaveText(NAME);
+  const run1 = await page.evaluate(() => ({
+    runId: window.__TR.state.lastRunId,
+    score: window.__TR.state.lastStats.score,
+  }));
+  expect(typeof run1.runId).toBe('string'); // v2.5: Server liefert runId
 
-  // v2.4-Gate: Eintrag erscheint OHNE Reload binnen ≤ 4 s auf dem offenen Board
+  // v2.4-Gate: Runde 1 erscheint OHNE Reload binnen ≤ 4 s auf dem offenen Board
   await expect(board.locator('#board-list li').filter({ hasText: NAME })).toHaveCount(1, { timeout: 4000 });
   await expect(board.locator('#offline-badge')).toBeHidden();
 
@@ -102,9 +106,59 @@ test('Live: Board offen → Playing-Zeile bei Rundenstart, Score ohne Reload ≤
     .poll(async () => Number(await board.locator('#rounds-num').textContent()), { timeout: 8000 })
     .toBeGreaterThan(roundsBefore);
 
+  // ---------- Runde 2, GLEICHER Name (v2.5-Kernbeweis) ----------
   // Restart < 1 s auch live
   const t0 = Date.now();
   await page.locator('#btn-again').tap();
   await expect(page.locator('#screen-countdown')).toBeVisible({ timeout: 1000 });
   expect(Date.now() - t0).toBeLessThan(1000);
+  await page.locator('#btn-start-round').tap();
+  await expect(page.locator('#screen-game')).toBeVisible({ timeout: 8000 });
+
+  // 12 Catches = 201 Punkte (schlechter als Runde 1, aber Top-10-fähig)
+  await page.evaluate(() => {
+    const g = window.__TR.game;
+    g.stop();
+    for (let i = 0; i < 12; i++) {
+      g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
+      g.update(1 / 60);
+    }
+    g.t = g.duration + 0.01;
+    g.update(1 / 60);
+    return 1;
+  });
+  await expect(page.locator('#screen-result')).toBeVisible();
+  await expect(page.locator('#res-rank')).toContainText(/Platz/i, { timeout: 10_000 });
+  const run2 = await page.evaluate(() => ({
+    runId: window.__TR.state.lastRunId,
+    score: window.__TR.state.lastStats.score,
+    rankText: document.getElementById('res-rank').textContent,
+    top: window.__TR.state.top,
+  }));
+  expect(run2.runId).not.toBe(run1.runId);
+  expect(run2.score).toBeLessThan(run1.score);
+
+  // (a) BEIDE Runden in der Top 10, Ränge listen-konsistent
+  const mine = run2.top.filter((e) => e.name === NAME);
+  expect(mine).toHaveLength(2);
+  expect(mine.map((e) => e.score).sort((a, b) => b - a)).toEqual([run1.score, run2.score]);
+  const idx2 = run2.top.findIndex((e) => e.id === `${NAME}#${run2.runId}`);
+  expect(idx2).toBeGreaterThanOrEqual(0);
+  expect(run2.rankText).toBe(`Platz ${idx2 + 1}`); // angezeigter Rang = Listen-Position der Runde
+  // me-Markierung trifft NUR die frische Runde 2
+  await expect(page.locator('#res-top10 li.me')).toHaveCount(1);
+  await expect(page.locator('#res-top10 li.me .lb-score')).toHaveText(String(run2.score));
+
+  // (b) Alt-Einträge der Best-of-Ära unversehrt (Member ohne '#')
+  const selcuk = run2.top.find((e) => e.id === 'Selcuk');
+  const osman = run2.top.find((e) => e.id === 'Osman');
+  expect(selcuk).toBeTruthy();
+  expect(selcuk.score).toBe(1551);
+  expect(osman).toBeTruthy();
+  expect(osman.score).toBe(1519);
+
+  // (c) Board zeigt BEIDE Runden live ohne Reload (≤ 4 s nach Submit)
+  await expect(board.locator('#board-list li').filter({ hasText: NAME })).toHaveCount(2, { timeout: 4000 });
+  await expect(board.locator('#board-list li').filter({ hasText: 'Selcuk' })).toHaveCount(1);
+  await expect(board.locator('#board-list li').filter({ hasText: 'Osman' })).toHaveCount(1);
 });
