@@ -161,11 +161,33 @@ async function fetchBoard() {
   return r.json();
 }
 
+// v2.4: Runden-Zähler — Zahl zählt bei Änderung sichtbar hoch (ease-out, 700 ms)
+let shownRounds = 0;
+function renderRounds(target) {
+  target = Number(target) || 0;
+  const el = $('rounds-num');
+  if (target === shownRounds) {
+    el.textContent = String(target);
+    return;
+  }
+  const from = shownRounds;
+  shownRounds = target;
+  const t0 = performance.now();
+  const dur = 700;
+  (function tick(now) {
+    const p = Math.min((now - t0) / dur, 1);
+    el.textContent = String(Math.round(from + (target - from) * (1 - Math.pow(1 - p, 3))));
+    if (p < 1 && shownRounds === target) requestAnimationFrame(tick);
+  })(t0);
+}
+
 function render(data) {
   // Re-Render nur bei Datenänderung (MIXR-Lesson: Polling-DOM frisst sonst Klicks/Flackern)
-  const json = JSON.stringify([data.top, data.banner, data.eventName]);
+  const json = JSON.stringify([data.top, data.banner, data.eventName, data.rounds]);
   if (json === lastJson) return;
   lastJson = json;
+
+  renderRounds(data.rounds);
 
   // v2.2: Celebration-Erkennung VOR dem Stand-Update; Erst-Load (prevTop null)
   // setzt nur den Vergleichsstand und feiert nichts

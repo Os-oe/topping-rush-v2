@@ -33,9 +33,9 @@ export default async function handler(req, res) {
   try {
     // ---------- GET /api/leaderboard ----------
     if (path === '/api/leaderboard' && req.method === 'GET') {
-      const [top, cfg] = await Promise.all([store.top(10), store.getConfig()]);
+      const [top, cfg, rounds] = await Promise.all([store.top(10), store.getConfig(), store.getRounds()]);
       return send(res, 200, {
-        top, banner: cfg.banner, duration: cfg.duration, eventName: cfg.eventName, mode: store.mode,
+        top, banner: cfg.banner, duration: cfg.duration, eventName: cfg.eventName, rounds, mode: store.mode,
       });
     }
 
@@ -53,6 +53,7 @@ export default async function handler(req, res) {
         return send(res, 429, { error: 'rate_limited' });
       }
 
+      await store.incrRounds(); // v2.4: jeder gültige Score-Submit = eine Runde
       const { changed, best, tries } = await store.submit(n.name, s.score);
       const rank = await store.rank(n.name);
       let deltaUp = null;

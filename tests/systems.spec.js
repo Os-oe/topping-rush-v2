@@ -15,6 +15,7 @@ test('Leaderboard: leer → Defaults', async ({ request }) => {
   expect(j.top).toEqual([]);
   expect(j.duration).toBe(60);
   expect(j.eventName).toBe('Kermes • Fatih Camii Fellbach'); // Default (Nachtrag v1.1)
+  expect(j.rounds).toBe(0); // v2.4: Runden-Zähler startet bei 0 (Reset nullt)
   expect(j.mode).toBe('memory');
 });
 
@@ -46,6 +47,10 @@ test('Score: Best-of pro Name (ZADD-GT-Semantik) + Rang + Delta', async ({ reque
   j = await r.json();
   expect(j.isNewBest).toBe(true);
   expect(j.rank).toBe(1);
+
+  // v2.4: Runden-Zähler — 4 gültige Submits seit Reset = 4 Runden
+  const lb = await (await request.get('/api/leaderboard')).json();
+  expect(lb.rounds).toBe(4);
 });
 
 test('Schutz: Whitelist-Regex, Blockliste, Score-Deckel 3000', async ({ request }) => {
@@ -101,10 +106,11 @@ test('Admin: PIN-Gate, Banner, Rundenlänge, Reset', async ({ request }) => {
   const list = await r.json();
   expect(list.entries.length).toBeGreaterThan(0);
 
-  // Reset → leer
+  // Reset → leer, Runden-Zähler mitgenullt (v2.4)
   await request.post('/api/admin', { data: { pin: PIN, action: 'reset' } });
   const after = await (await request.get('/api/leaderboard')).json();
   expect(after.top).toEqual([]);
+  expect(after.rounds).toBe(0);
   // Aufräumen für Folgetests
   await request.post('/api/admin', { data: { pin: PIN, action: 'duration', value: 60 } });
   await request.post('/api/admin', { data: { pin: PIN, action: 'banner', value: '' } });
@@ -180,6 +186,9 @@ test('/board: ohne Gate sofort sichtbar, QR-Kachel weiß, Daten ab Load gepollt'
 
   await expect(page.locator('#board-list li.rank-1 .b-name')).toHaveText('BoardStar');
   await expect(page.locator('#board-banner')).toHaveText('Sieger bekommt 1 Drink!');
+  // v2.4: Runden-Zähler im Header (1 Submit seit Reset), Count-up landet auf 1
+  await expect(page.locator('#board-rounds')).toContainText('Runden');
+  await expect(page.locator('#rounds-num')).toHaveText('1');
   await expect(page.locator('#offline-badge')).toBeHidden();
   await request.post('/api/admin', { data: { pin: PIN, action: 'banner', value: '' } });
 });
