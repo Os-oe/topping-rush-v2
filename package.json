@@ -1,5 +1,5 @@
 {
-  "name": "topping-rush",
+  "name": "topping-rush-v2",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,7 +10,7 @@
     "serve": "npm run build && node server.js",
     "test": "playwright test --project=mobile",
     "test:2x": "playwright test --project=mobile && playwright test --project=mobile",
-    "test:live": "LIVE_URL=https://topping-rush.demo.osai.solutions playwright test tests/live.spec.js --project=live"
+    "test:live": "LIVE_URL=https://topping-rush-v2.demo.osai.solutions playwright test tests/live.spec.js --project=live"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.5",

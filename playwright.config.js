@@ -22,7 +22,7 @@ export default defineConfig({
       testMatch: /live\.spec\.js/,
       use: {
         ...devices['Pixel 7'],
-        baseURL: process.env.LIVE_URL || 'https://topping-rush.demo.osai.solutions',
+        baseURL: process.env.LIVE_URL || 'https://topping-rush-v2.demo.osai.solutions',
       },
     },
   ],
