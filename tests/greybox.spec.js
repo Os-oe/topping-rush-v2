@@ -280,8 +280,58 @@ test.describe('Greybox — Kernloop', () => {
       expect(p.t).toBeGreaterThanOrEqual(wins[i][0] - 0.5);
       expect(p.t).toBeLessThanOrEqual(wins[i][1] + 1.5);
     });
-    // Frenzy friert Fallgeschwindigkeit ein
-    expect(r.fallFrozen).toBeCloseTo(r.fallAt50, 2);
+    // v2.5: Frenzy NICHT mehr eingefroren — +10 % Fallgeschwindigkeit auf den
+    // 50-s-Wert (Fallzeit = Rampen-Ende / 1.1)
+    expect(r.fallAt50 / r.fallFrozen).toBeCloseTo(1.1, 2);
+  });
+
+  test('Endgame v2.5: sqrt-Endfaktor 1.75, Frenzy +10 %, Frenzy-Bad 14 %, Wespen-Amplitude ±65 ab Sek. 40', async ({ page }) => {
+    await page.goto('/?seed=42');
+    await page.evaluate(() => window.__TR.newGame({ autoSpawn: false }));
+    const r = await page.evaluate(() => {
+      const CFG = window.__TR.CFG;
+      const g = window.__TR.game;
+      g.stop();
+      const fall0 = g.fallTime(0);
+      const fall50 = g.fallTime(50);
+      // Wespe VOR Sekunde 40 → Amplitude 50 (beim Spawn fixiert)
+      g.t = 10;
+      const early = g.spawnItem('wasp', { x: 200, y: 100 });
+      // Wespe AB Sekunde 40 → Amplitude 65
+      g.t = 41;
+      const late = g.spawnItem('wasp', { x: 200, y: 100 });
+      // Sinus-Auslenkung nutzt die item-Amplitude (Peak nach Viertelperiode)
+      late.born = g.t;
+      g.t += 0.25 / CFG.waspHz;
+      g.update(0);
+      const lateOffset = late.x - late.baseX;
+      // Frenzy: Fallzeit = 50-s-Wert / 1.1
+      g.frenzy = true;
+      const fallFrenzy = g.fallTime();
+      return {
+        cfg: {
+          fallSpeedupMax: CFG.fallSpeedupMax,
+          frenzyFallBoost: CFG.frenzyFallBoost,
+          badShareFrenzy: CFG.badShareFrenzy,
+          waspAmpLate: CFG.waspAmpLate,
+        },
+        fall0, fall50, fallFrenzy,
+        earlyAmp: early.amp, lateAmp: late.amp, lateOffset,
+      };
+    });
+    // Konfigurations-Gate (Nachtrag v2.5)
+    expect(r.cfg.fallSpeedupMax).toBe(1.75);
+    expect(r.cfg.frenzyFallBoost).toBe(1.1);
+    expect(r.cfg.badShareFrenzy).toBe(0.14);
+    expect(r.cfg.waspAmpLate).toBe(65);
+    // Kurven-Verhalten
+    expect(r.fall0).toBeCloseTo(2.3, 3); // Startwert unverändert
+    expect(r.fall50).toBeCloseTo(2.3 / 1.75, 3); // Endfaktor 1.75
+    expect(r.fallFrenzy).toBeCloseTo(2.3 / 1.75 / 1.1, 3); // Frenzy +10 %
+    // Wespen-Amplitude
+    expect(r.earlyAmp).toBe(50);
+    expect(r.lateAmp).toBe(65);
+    expect(r.lateOffset).toBeCloseTo(65, 0); // Peak = ±65 px
   });
 
   test('Frenzy: Punkte ×2 in den letzten 10 s', async ({ page }) => {

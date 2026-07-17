@@ -131,10 +131,12 @@ export class Game {
   }
 
   fallTime(atT = this.t) {
-    // sqrt-Kurve; in der Frenzy eingefroren (Wert am Rampen-Ende)
+    // sqrt-Kurve; v2.5: Frenzy nicht mehr eingefroren, sondern +10 %
+    // Fallgeschwindigkeit auf den Wert am Rampen-Ende (kürzere Fallzeit)
     const tt = this.frenzy ? this.rampEnd : Math.min(atT, this.rampEnd);
     const p = Math.sqrt(tt / this.rampEnd);
-    return CFG.fallTimeStart / (1 + (CFG.fallSpeedupMax - 1) * p);
+    const base = CFG.fallTimeStart / (1 + (CFG.fallSpeedupMax - 1) * p);
+    return this.frenzy ? base / CFG.frenzyFallBoost : base;
   }
 
   // ---------- Spawner ----------
@@ -200,6 +202,9 @@ export class Game {
       rot: this.rng() * Math.PI * 2,
       rotV: (this.rng() - 0.5) * 2.2, // leichte Rotation
       r: type === 'wasp' ? 20 : type === 'bomb' ? 20 : type === 'powerup' ? 22 : 17,
+      // v2.5: Wespen-Amplitude ab Sekunde 40 ±65 statt ±50 px — beim Spawn
+      // fixiert (kein x-Sprung bei laufenden Wespen an der Schwelle)
+      amp: this.t >= CFG.waspAmpLateT * (this.timeScale || 1) ? CFG.waspAmpLate : CFG.waspAmp,
       dead: false,
     };
     this.items.push(item);
@@ -274,7 +279,7 @@ export class Game {
       it.y += it.vy * speedF * dt;
       it.rot += it.rotV * dt;
       if (it.type === 'wasp') {
-        it.x = it.baseX + CFG.waspAmp * Math.sin(2 * Math.PI * CFG.waspHz * (this.t - it.born));
+        it.x = it.baseX + (it.amp ?? CFG.waspAmp) * Math.sin(2 * Math.PI * CFG.waspHz * (this.t - it.born));
       }
       // Magnet zieht NUR gute Items + Power-Ups
       if (magnet && (it.type === 'topping' || it.type === 'powerup')) {

@@ -1,7 +1,8 @@
 // Balancing-Playtest (Phase 5-Gate, auch Canabalt-Review Phase 1).
 // Läuft nur mit BALANCE=1 — echte 60-s-Runden in Echtzeit.
-// Bänder v2.2 (Füll-Bonus +30/10 Catches eingepreist, Bombe −30):
-// Casual-Bot ~55 % Catch → Ziel 350–600 · Profi-Bot ~90 % → 1000–1500.
+// Bänder v2.5 (härteres Endgame: sqrt-Endfaktor 1.75, Frenzy +10 % Fallspeed,
+// Frenzy-Bad 14 %, Wespen-Amplitude ±65 ab Sek. 40):
+// Casual-Bot ~55 % Catch → Ziel 320–580 · Profi-Bot ~90 % → 950–1450.
 import { test, expect } from '@playwright/test';
 
 test.skip(!process.env.BALANCE, 'nur mit BALANCE=1');
@@ -76,7 +77,7 @@ async function runBot(page, profile) {
   });
 }
 
-test('Profi-Bot: ~90 % Catch → 1000–1500 Punkte (v2.2-Band)', async ({ page }) => {
+test('Profi-Bot: ~90 % Catch → 950–1450 Punkte (v2.5-Band)', async ({ page }) => {
   test.setTimeout(120_000);
   const r = await runBot(page, {
     interval: 150, reaction: 130, jitter: 22, skipChance: 0.05,
@@ -84,11 +85,11 @@ test('Profi-Bot: ~90 % Catch → 1000–1500 Punkte (v2.2-Band)', async ({ page 
   });
   console.log('PROFI:', JSON.stringify(r));
   expect(r.catchRate).toBeGreaterThan(0.8);
-  expect(r.score).toBeGreaterThanOrEqual(1000);
-  expect(r.score).toBeLessThanOrEqual(1500);
+  expect(r.score).toBeGreaterThanOrEqual(950);
+  expect(r.score).toBeLessThanOrEqual(1450);
 });
 
-test('Casual-Bot: ~55 % Catch → 350–600 Punkte (v2.2-Band)', async ({ page }) => {
+test('Casual-Bot: ~55 % Catch → 320–580 Punkte (v2.5-Band)', async ({ page }) => {
   test.setTimeout(120_000);
   const r = await runBot(page, {
     interval: 850, reaction: 400, jitter: 110, skipChance: 0.4,
@@ -99,6 +100,6 @@ test('Casual-Bot: ~55 % Catch → 350–600 Punkte (v2.2-Band)', async ({ page }
   // Score-in-Band (Test-Design, nicht Produkt — dokumentiert im PROTOKOLL)
   expect(r.catchRate).toBeGreaterThan(0.35);
   expect(r.catchRate).toBeLessThan(0.7);
-  expect(r.score).toBeGreaterThanOrEqual(350);
-  expect(r.score).toBeLessThanOrEqual(600);
+  expect(r.score).toBeGreaterThanOrEqual(320);
+  expect(r.score).toBeLessThanOrEqual(580);
 });

@@ -13,11 +13,12 @@ export const CFG = {
   spawnEnd: 0.7,           // s Intervall am Rampen-Ende (Sekunde 50 bei 60 s)
   spawnFrenzy: 0.45,       // s Intervall in der Frenzy
   fallTimeStart: 2.3,      // s oben→unten bei t=0
-  fallSpeedupMax: 1.6,     // Faktor am Rampen-Ende (sqrt-Kurve, nicht linear)
+  fallSpeedupMax: 1.75,    // Faktor am Rampen-Ende (sqrt-Kurve; v2.5: 1.6 → 1.75)
+  frenzyFallBoost: 1.10,   // v2.5: Frenzy nicht mehr eingefroren — +10 % auf den 50-s-Wert
 
   // Fairness / Bad-Items
   badShareMax: 0.15,       // Anteil Bad-Items gesamt
-  badShareFrenzy: 0.10,
+  badShareFrenzy: 0.14,    // v2.5: 0.10 → 0.14 (Fairness-Regeln unangetastet)
   badMinGap: 1.5,          // s Mindestabstand zwischen Bad-Spawns
   badEarliest: 6,          // s Schonfrist
   badMinCatches: 3,        // erst nach 3 Catches
@@ -54,6 +55,8 @@ export const CFG = {
   fillTarget: 10,          // Catches bis „DRINK FERTIG!"
   fillBonus: 30,
   waspAmp: 50,             // px Sinus-Amplitude
+  waspAmpLate: 65,         // v2.5: ±65 px ab Sekunde 40 (skaliert mit Rundenlänge)
+  waspAmpLateT: 40,        // s Schwelle (Referenz 60-s-Runde)
   waspHz: 1.0,             // Sinus-Frequenz
 
   // Power-Ups (deterministische Slots, Fenster bei 60 s — skaliert mit Rundenlänge)
