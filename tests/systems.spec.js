@@ -19,7 +19,7 @@ test('Leaderboard: leer → Defaults', async ({ request }) => {
   expect(j.mode).toBe('memory');
 });
 
-test('Score: Best-of pro Name (ZADD-GT-Semantik) + Rang + Delta', async ({ request }) => {
+test('Score v2.5: Jede Runde zählt — runId, Rang der Runde, Mehrfach-Name in Top 10', async ({ request }) => {
   // Eigener Rate-Limit-Bucket via x-forwarded-for: Die Suite läuft in < 60 s,
   // ALLE Default-Bucket-Submits teilen sich also EIN Sliding-Window (10/60 s).
   // API-Seeds bekommen deshalb eigene Buckets; nur echte Browser-Submits
@@ -31,31 +31,41 @@ test('Score: Best-of pro Name (ZADD-GT-Semantik) + Rang + Delta', async ({ reque
   expect(j.isNewBest).toBe(true);
   expect(j.tries).toBe(1);
   expect(j.deltaUp).toBeNull();
+  expect(typeof j.runId).toBe('string');
+  const alinaRun1 = j.runId;
 
-  // schlechterer zweiter Versuch → Bestmarke bleibt
+  // schlechtere zweite Runde: landet ZUSÄTZLICH auf dem Board (Platz 2),
+  // Bestmarken-Meta bleibt namensbasiert (best 500, tries 2)
   r = await request.post('/api/score', { data: { name: 'Alina', score: 300 }, headers });
   j = await r.json();
+  expect(j.rank).toBe(2); // Rang DIESER Runde, nicht des Bestwerts
   expect(j.isNewBest).toBe(false);
   expect(j.best).toBe(500);
   expect(j.tries).toBe(2);
+  expect(j.deltaUp).toEqual({ rank: 1, points: 200 }); // Delta zur nächsthöheren Runde
+  expect(j.top.filter((e) => e.name === 'Alina')).toHaveLength(2); // Mehrfach-Name ok
+  expect(j.top[0].id).toBe(`Alina#${alinaRun1}`);
+  expect(j.top[1].id).toBe(`Alina#${j.runId}`);
 
-  // zweiter Spieler knapp dahinter → Delta-Framing-Daten
+  // zweiter Spieler schiebt sich dazwischen → Delta-Framing-Daten
   r = await request.post('/api/score', { data: { name: 'Ben', score: 488 }, headers });
   j = await r.json();
   expect(j.rank).toBe(2);
   expect(j.deltaUp).toEqual({ rank: 1, points: 12 }); // „Nur 12 Punkte hinter Platz 1!"
-  expect(j.top[0].name).toBe('Alina');
-  expect(j.top[1].name).toBe('Ben');
+  expect(j.top.map((e) => e.name)).toEqual(['Alina', 'Ben', 'Alina']);
 
-  // besserer Versuch → neue Bestmarke
+  // bessere Runde → Platz 1 + neue Bestmarke, alte Ben-Runde bleibt liegen
   r = await request.post('/api/score', { data: { name: 'Ben', score: 505 }, headers });
   j = await r.json();
   expect(j.isNewBest).toBe(true);
   expect(j.rank).toBe(1);
+  expect(j.top.map((e) => e.name)).toEqual(['Ben', 'Alina', 'Ben', 'Alina']);
 
   // v2.4: Runden-Zähler — 4 gültige Submits seit Reset = 4 Runden
   const lb = await (await request.get('/api/leaderboard')).json();
   expect(lb.rounds).toBe(4);
+  // GET liefert dieselbe {name, score, id}-Form
+  expect(lb.top[0].id).toBe(`Ben#${j.runId}`);
 });
 
 test('Schutz: Whitelist-Regex, Blockliste, Score-Deckel 3000', async ({ request }) => {
@@ -147,12 +157,13 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
   });
   await expect(page.locator('#screen-result')).toBeVisible();
   await expect(page.locator('#res-rank')).toHaveText('Platz 2', { timeout: 5000 });
-  await expect(page.locator('#res-delta')).toContainText('hinter Platz 1');
+  await expect(page.locator('#res-delta')).toContainText('Nur 67 Punkte hinter Platz 1!');
   await expect(page.locator('#res-top10 li')).toHaveCount(2);
   await expect(page.locator('#res-top10 li.me .lb-name')).toHaveText('FlowBot');
 
-  // v2.4: 2. Runde SCHLECHTER als Bestwert (91 < 233) → KEIN „Platz N"-Jubel,
-  // sondern ehrliche Beschriftung: Bestwert-Rang + „dein Bestwert zählt weiter"
+  // v2.5: 2. Runde SCHLECHTER (91 < 233) → landet TROTZDEM als eigene Runde
+  // auf dem Board (Platz 3). Rang-Jubel gilt der Runde; me-Markierung trifft
+  // über die runId NUR die frische Runde, nicht den 233er-Eintrag desselben Namens.
   await page.evaluate(() => {
     window.__TR.newGame({ autoSpawn: false });
     const g = window.__TR.game;
@@ -167,22 +178,29 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
     return 1;
   });
   await expect(page.locator('#screen-result')).toBeVisible();
-  await expect(page.locator('#res-rank')).toHaveText('Dein Bestwert: 233 — Platz 2', { timeout: 5000 });
-  await expect(page.locator('#res-delta')).toContainText('Diese Runde: 91 — dein Bestwert zählt weiter');
-  await expect(page.locator('#res-delta')).toContainText('hinter Platz 1'); // deltaUp bleibt (bezieht sich auf Bestwert)
+  await expect(page.locator('#res-rank')).toHaveText('Platz 3', { timeout: 5000 });
+  await expect(page.locator('#res-delta')).toContainText('Nur 142 Punkte hinter Platz 2!');
+  // Board: Champ 300, FlowBot 233, FlowBot 91 — Mehrfach-Name in der Top 10
+  await expect(page.locator('#res-top10 li')).toHaveCount(3);
+  await expect(page.locator('#res-top10 li .lb-name').filter({ hasText: 'FlowBot' })).toHaveCount(2);
+  // genau EINE me-Markierung: die frische 91er-Runde auf Platz 3
+  await expect(page.locator('#res-top10 li.me')).toHaveCount(1);
+  await expect(page.locator('#res-top10 li.me .lb-score')).toHaveText('91');
+  // Bestmarken-Zeile bleibt namensbasiert
+  await expect(page.locator('#res-best')).toContainText('Deine Bestmarke: 233');
   await expect(page.locator('#res-newbest')).toBeHidden();
 });
 
-test('Rang-Sicherheitsnetz: widerspricht res.rank der Top-Liste, gewinnt die Liste (Live-Bug 18.07.)', async ({ page }) => {
-  // Stub liefert absichtlich inkonsistente Daten: rank:1, aber top zeigt den
-  // Spieler hinter einem höheren Score — genau der ZRANK-statt-ZREVRANK-Bug.
+test('Rang-Sicherheitsnetz: widerspricht res.rank der runId-Position in res.top, gewinnt die Liste (Live-Bug 18.07., v2.5 id-basiert)', async ({ page }) => {
+  // Stub liefert absichtlich inkonsistente Daten: rank:1, aber top zeigt die
+  // Runde (runId) hinter einem höheren Score — genau der ZRANK-statt-ZREVRANK-Bug.
   // route VOR goto (LESSON v2.4: Poll-ab-Load macht späte Stubs wirkungslos).
   await page.route('**/api/score', (route) =>
     route.fulfill({
       json: {
-        ok: true, rank: 1, best: 91, isNewBest: true, tries: 1,
+        ok: true, runId: 'r-guard', rank: 1, best: 91, isNewBest: true, tries: 1,
         deltaUp: null,
-        top: [{ name: 'Selcuk', score: 1551 }, { name: 'GuardBot', score: 91 }],
+        top: [{ name: 'Selcuk', score: 1551, id: 'Selcuk' }, { name: 'GuardBot', score: 91, id: 'GuardBot#r-guard' }],
       },
     })
   );

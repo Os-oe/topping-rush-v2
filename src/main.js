@@ -14,6 +14,7 @@ const state = {
   top: [],
   game: null,
   lastStats: null,
+  lastRunId: null, // v2.5: runId der zuletzt gemeldeten Runde (me-Markierung)
   submitting: false,
   seed: null,
   muted: localStorage.getItem('tr-muted') === '1',
@@ -211,7 +212,9 @@ function renderResultBase(stats, attempts) {
         ? `Alte Bestmarke: ${prevBest} (+${stats.score - prevBest})`
         : `Deine Bestmarke: ${prevBest} (${stats.score - prevBest})`
       : '';
-  $('res-attempt').textContent = `Versuch #${attempts} — dein bester zählt`;
+  // v2.5-Copy-Abweichung (dokumentiert): „dein bester zählt" wäre im Modus
+  // „Jede Runde zählt" faktisch falsch — jede Runde landet auf dem Board.
+  $('res-attempt').textContent = `Versuch #${attempts} — jede Runde zählt`;
   const puMissed = stats.puSpawned - stats.puCollected;
   $('res-stat').textContent =
     puMissed > 0 ? `${puMissed} Power-Up${puMissed > 1 ? 's' : ''} verpasst` : stats.puSpawned > 0 ? 'Alle Power-Ups geschnappt!' : '';
@@ -229,17 +232,21 @@ function renderResultServer(stats, res) {
   }
   delta.classList.remove('offline');
   state.top = res.top || state.top;
+  state.lastRunId = res.runId || null;
 
-  // Sicherheitsnetz (18.07.): Der angezeigte Rang MUSS zur mitgelieferten
-  // Top-Liste passen — steht der eigene Name in res.top, gewinnt dessen
-  // Position über res.rank (fing live einen Server-Rang-Bug: „PLATZ 1!" bei
-  // sichtbarem Platz 2). deltaUp wird dann ebenfalls aus der Liste abgeleitet.
-  const meIdx = (res.top || []).findIndex((e) => e.name.toLowerCase() === state.name.toLowerCase());
+  // Sicherheitsnetz (18.07., v2.5 auf runId umgestellt): Der angezeigte Rang
+  // MUSS zur mitgelieferten Top-Liste passen — steht die frisch gespielte
+  // Runde (runId) in res.top, gewinnt ihre Position über res.rank. deltaUp
+  // wird dann ebenfalls aus der Liste abgeleitet (Delta zur Runde darüber).
+  // id = voller Member `name#runId` — Match über das runId-Suffix
+  const meIdx = (res.top || []).findIndex(
+    (e) => state.lastRunId && typeof e.id === 'string' && e.id.endsWith(`#${state.lastRunId}`)
+  );
   const rank = meIdx >= 0 ? meIdx + 1 : res.rank;
   let deltaUp = res.deltaUp;
   if (meIdx > 0) {
     const above = res.top[meIdx - 1];
-    deltaUp = { rank: meIdx, points: above.score - res.best };
+    deltaUp = { rank: meIdx, points: above.score - stats.score };
   } else if (meIdx === 0) {
     deltaUp = null;
   }
@@ -253,40 +260,33 @@ function renderResultServer(stats, res) {
     }
   }
 
-  // v2.4: Die API meldet den Rang des BESTWERTS (Best-of), nicht der Runde.
-  // Jubel-Rang deshalb NUR bei echter neuer Bestmarke — sonst ehrlich beschriften.
-  if (res.isNewBest) {
-    if (rank === 1) {
-      $('res-rank').textContent = 'PLATZ 1!';
-      $('res-delta').textContent = 'Du führst das Board an!';
-    } else if (rank) {
-      $('res-rank').textContent = `Platz ${rank}`;
-      if (deltaUp && deltaUp.points > 0) {
-        $('res-delta').textContent = `Nur ${deltaUp.points} Punkte hinter Platz ${deltaUp.rank}!`;
-      }
-    }
+  // v2.5 „Jede Runde zählt": Der Rang-Jubel gilt IMMER der Runde — jede Runde
+  // ist ein eigener Board-Eintrag, der Rang ist trivial ehrlich.
+  if (rank === 1) {
+    $('res-rank').textContent = 'PLATZ 1!';
+    $('res-delta').textContent = 'Du führst das Board an!';
   } else if (rank) {
-    $('res-rank').textContent = `Dein Bestwert: ${res.best} — Platz ${rank}`;
-    let msg = `Diese Runde: ${stats.score} — dein Bestwert zählt weiter`;
+    $('res-rank').textContent = `Platz ${rank}`;
     if (deltaUp && deltaUp.points > 0) {
-      msg += ` · Nur ${deltaUp.points} Punkte hinter Platz ${deltaUp.rank}!`;
+      $('res-delta').textContent = `Nur ${deltaUp.points} Punkte hinter Platz ${deltaUp.rank}!`;
     }
-    $('res-delta').textContent = msg;
   }
   if (res.isNewBest && res.tries > 1) {
     $('res-newbest').hidden = false; // Versuch #1 ist keine „Bestmarke"
     window.__audio?.play('newBest');
   }
-  renderTop10($('res-top10'), state.top);
+  renderTop10($('res-top10'), state.top, state.lastRunId);
 }
 
-function renderTop10(ol, top) {
+function renderTop10(ol, top, meId) {
   ol.innerHTML = '';
   (top || []).slice(0, 10).forEach((e, i) => {
     const li = document.createElement('li');
     li.innerHTML = `<span class="lb-rank">${i + 1}</span><span class="lb-name"></span><span class="lb-score">${e.score}</span>`;
     li.querySelector('.lb-name').textContent = e.name;
-    if (e.name.toLowerCase() === state.name.toLowerCase()) li.classList.add('me');
+    // v2.5: me-Markierung über die runId (id = Member `name#runId`) —
+    // markiert NUR die frisch gespielte Runde, nicht alle Einträge des Namens
+    if (meId && typeof e.id === 'string' && e.id.endsWith(`#${meId}`)) li.classList.add('me');
     ol.appendChild(li);
   });
 }
@@ -387,6 +387,7 @@ window.__TR = {
   show,
   startCountdown,
   startGame,
+  CFG, // v2.5: Balancing-Werte im Test prüfbar (Endgame-Gate)
   get game() {
     return state.game;
   },
