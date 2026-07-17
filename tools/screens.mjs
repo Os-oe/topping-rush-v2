@@ -15,9 +15,9 @@ const ctx0 = await browser.newContext();
 const req = ctx0.request;
 await req.post(`${BASE}/api/admin`, { data: { pin: PIN, action: 'reset' } });
 await req.post(`${BASE}/api/admin`, { data: { pin: PIN, action: 'banner', value: 'Platz 1 heute: 1 Getränk aufs Haus!' } });
-for (const [name, score] of [['Luna', 1240], ['Mex', 1105], ['Toni', 980], ['Ayse', 870], ['Ben', 760], ['Caro', 655], ['Deniz', 540], ['Eli', 430], ['Fio', 320]]) {
+for (const [name, score] of [['Luna', 1240], ['Mex', 1105], ['Toni', 980], ['Ayse', 870], ['Ben', 760], ['Caro', 655], ['Deniz', 540], ['Eli', 430]]) {
   await req.post(`${BASE}/api/score`, { data: { name, score } });
-  // Rate-Limit ist 10/60 s — 9 Seeds, damit der Spiel-Submit noch durchgeht
+  // Rate-Limit ist 10/60 s — 8 Seeds: Spiel-Submit + Celebration-Trigger passen noch rein
 }
 await ctx0.close();
 
@@ -72,6 +72,26 @@ await page.evaluate(() => {
   return 1;
 });
 await page.screenshot({ path: `${OUT}/04b-zutaten-lineup.png` });
+// v2.2: Füllstand sichtbar (7/10, Karpuz-Rosa) — Level-Lerp über ~50 Render-Frames
+await page.evaluate(() => {
+  const g = window.__TR.game;
+  g.items.length = 0;
+  g.fill = 7;
+  g.fillVariant = 'karpuz';
+  for (let i = 0; i < 50; i++) g.render();
+  return 1;
+});
+await page.screenshot({ path: `${OUT}/04c-fuellstand.png` });
+// v2.2: „DRINK FERTIG!"-Moment — 10. Catch löst Bonus + Konfetti + Popup aus
+await page.evaluate(() => {
+  const g = window.__TR.game;
+  g.fill = 9;
+  g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'cilek' });
+  g.update(1 / 60);
+  for (let i = 0; i < 14; i++) g.render(); // Kaskade (+100 ms Popup) durchlaufen
+  return 1;
+});
+await page.screenshot({ path: `${OUT}/04d-drink-fertig.png` });
 await page.evaluate(() => { window.__TR.game.start(); return 1; }); // Loop für Frenzy-Shot neu starten
 // Frenzy
 await page.evaluate(() => { window.__TR.game.t = window.__TR.game.duration - 9.5; return 1; });
@@ -93,6 +113,11 @@ await tvPage.locator('#btn-board-start').click();
 await tvPage.waitForSelector('#board-list li');
 await tvPage.waitForTimeout(600);
 await tvPage.screenshot({ path: `${OUT}/08-board.png` });
+// v2.2: Board-Celebration — neuer Platz-1-Score, nächster Poll feiert (🏆 + Konfetti)
+await tv.request.post(`${BASE}/api/score`, { data: { name: 'Luna', score: 1500 } });
+await tvPage.waitForSelector('#celebrate-pop:not([hidden])', { timeout: 12_000 });
+await tvPage.waitForTimeout(1100); // Konfetti im Bild
+await tvPage.screenshot({ path: `${OUT}/08b-board-celebration.png` });
 await tv.close();
 
 // ---------- Admin (mobil) ----------
