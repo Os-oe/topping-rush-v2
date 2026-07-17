@@ -4,3 +4,4 @@ test-results
 shots
 .env
 .vercel
+.admin-pin.local
