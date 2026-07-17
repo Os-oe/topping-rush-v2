@@ -160,10 +160,10 @@ body {
 .start-hint { font: 600 13px 'Nunito', system-ui, sans-serif; color: var(--ink-soft); animation: hintPulse 2.2s ease-in-out infinite; }
 @keyframes hintPulse { 50% { opacity: 0.45; } }
 .btn-start {
-  position: absolute; inset: 13px; border-radius: 50%;
+  width: min(240px, 72vw); padding: 14px 16px; border-radius: 999px;
   background: var(--coral); color: #FFFFFF;
-  border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink);
-  font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.04em;
+  border: 3px solid var(--ink); box-shadow: 0 4px 0 var(--ink);
+  font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.25rem; letter-spacing: 0.05em;
   text-shadow: 0 1.5px 0 rgba(74,46,31,0.4);
   cursor: pointer; transition: transform 0.06s ease, box-shadow 0.06s ease;
 }
