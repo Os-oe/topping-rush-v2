@@ -137,3 +137,20 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
 | Audio (SFX + Suno-Loop aus V1; Poff/Kling = WebAudio) | — | 0,00 € |
 | Nachträge v2.3 + v2.4 (reiner Code, keine Renders) | — | 0,00 € |
 | **Gesamt (inkl. v2.1–v2.4)** | | **0,70 €** (Cap 10 €) |
+
+## Rang-Bug live (18.07., von Osman per Screenshot entdeckt)
+- **`zrank(key, member, {rev:true})` ist eine stille Falle:** ZRANK kennt keine
+  REV-Option (nur ZRANGE hat sie) — @upstash/redis ignoriert das dritte
+  Argument, zurück kommt der AUFSTEIGENDE Rang: niedrigster Score = „Platz 1".
+  Richtig: `zrevrank(key, member)`. Der Memory-Fallback sortierte korrekt,
+  darum blieb die lokale Suite grün — **Adapter-Diskrepanzen brauchen einen
+  Live-Zwei-Spieler-Test gegen die echte DB** (hoher + niedriger Score,
+  Ränge gegen die Listen-Reihenfolge asserten).
+- **Frontend-Sicherheitsnetz eingebaut:** Der Ergebnis-Screen leitet den Rang
+  aus der mitgelieferten Top-Liste ab, wenn der eigene Name drinsteht —
+  widersprüchliche Server-Ränge können nie mehr angezeigt werden.
+- **localStorage-Bestmarke lügt nach Admin-Reset** (Geister-Bestmarke „1427"
+  überlebte den Server-Reset): Server-`best` ist die Wahrheit, localStorage
+  wird nach jedem Submit angeglichen.
+- Live-Testdaten auf einem Board mit echten Scores NIE per Admin-Reset
+  räumen — gezielt `ZREM` + `DECRBY lb:rounds` (cleanup-Skript-Muster).
