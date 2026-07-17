@@ -70,15 +70,16 @@ export default async function handler(req, res) {
 
       await store.incrRounds(); // v2.4: jeder gültige Score-Submit = eine Runde
       await store.clearPlaying(n.name); // v2.4: Runde vorbei → Presence weg
-      const { changed, best, tries } = await store.submit(n.name, s.score);
-      const rank = await store.rank(n.name);
+      // v2.5 „Jede Runde zählt": rank = echter Rang DIESER Runde (Member
+      // name#runId); Delta bezieht sich auf die nächsthöhere Runde.
+      const { runId, rank, best, isNewBest, tries } = await store.submit(n.name, s.score);
       let deltaUp = null;
       if (rank && rank > 1) {
         const above = await store.entryAt(rank - 1);
-        if (above) deltaUp = { rank: rank - 1, points: above.score - best };
+        if (above) deltaUp = { rank: rank - 1, points: above.score - s.score };
       }
       const top = await store.top(10);
-      return send(res, 200, { ok: true, rank, best, isNewBest: changed, tries, deltaUp, top });
+      return send(res, 200, { ok: true, runId, rank, best, isNewBest, tries, deltaUp, top });
     }
 
     // ---------- POST /api/admin ----------
