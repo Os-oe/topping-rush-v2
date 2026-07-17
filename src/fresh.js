@@ -8,10 +8,10 @@ import { getSprites } from './sprites.js';
 import { ParticlePool } from './particles.js';
 
 const C = CFG.colors;
-// Catch-Partikel in der Objektfarbe
+// Catch-Partikel in der Objektfarbe (an die KI-Sprite-Palette angelehnt)
 const TOPPING_COLORS = {
   nar: 'red', limon: 'yellow', karpuz: 'magenta', nane: 'lime',
-  visne: 'magenta', portakal: 'orange', cilek: 'red', cay: 'amber',
+  visne: 'red', portakal: 'orange', cilek: 'red', cay: 'amber',
 };
 // Konfetti-Palette (ŞERBET-RUSH-Banner + Frenzy-Burst)
 const CONFETTI = ['#2EC4B6', '#FF6B6B', '#FFC53D', '#D81E5B', '#3FA34D'];
@@ -183,11 +183,11 @@ export class FreshSkin {
     });
   }
 
-  spriteFor(it, game) {
+  spriteFor(it) {
     const S = this.sprites;
     if (it.type === 'topping') return S.toppings[it.variant] || S.toppings.nar;
-    if (it.type === 'chili') return S.chili[((game.t * 8) | 0) % 2];
-    if (it.type === 'wasp') return S.wasp[((game.t * 14) | 0) % 2];
+    if (it.type === 'chili') return S.chili;
+    if (it.type === 'wasp') return S.wasp;
     return S.capsules[it.variant] || S.capsules.magnet;
   }
 
@@ -319,14 +319,13 @@ export class FreshSkin {
     ctx.translate(shX, shY);
 
     const S = this.sprites;
-    const half = CFG.spriteSize / 2;
 
     // ---------- Bodenschatten zuerst (liegen unter allen Objekten) ----------
     for (const it of game.items) {
-      const w = it.type === 'wasp' ? CFG.spriteSize * 1.1 : CFG.spriteSize;
-      const sw = w * 0.92;
+      const e = this.spriteFor(it);
+      const sw = e.w * 0.92;
       const sh = sw * 0.34;
-      ctx.drawImage(S.shadow, (it.x - sw / 2) | 0, (it.y + half * 0.9 + w * CFG.shadow.offsetYFrac - sh / 2) | 0, sw | 0, sh | 0);
+      ctx.drawImage(S.shadow, (it.x - sw / 2) | 0, (it.y + e.h * 0.45 + e.h * CFG.shadow.offsetYFrac - sh / 2) | 0, sw | 0, sh | 0);
     }
     // Becher-Schatten
     const cup = game.cup;
@@ -339,26 +338,27 @@ export class FreshSkin {
     for (const it of game.items) {
       const x = it.x | 0;
       const y = it.y | 0;
-      const spr = this.spriteFor(it, game);
+      const e = this.spriteFor(it);
       ctx.save();
       ctx.translate(x, y);
       if (it.type === 'topping') {
         ctx.rotate(Math.sin(it.rot) * 0.35);
         ctx.scale(0.95, 1.05); // Fall-Stretch
-        ctx.drawImage(spr, -32, -32);
       } else if (it.type === 'chili') {
-        ctx.rotate(Math.sin(it.rot) * 0.2);
-        ctx.scale(0.95, 1.05);
-        ctx.drawImage(spr, -36, -36);
+        // Gefahr-Telegraphing ohne Glow: schnelles Zittern + Puls
+        ctx.rotate(Math.sin(it.rot) * 0.2 + Math.sin(game.t * 18) * 0.06);
+        const p = 1 + Math.sin(game.t * 10) * 0.05;
+        ctx.scale(0.95 * p, 1.05 * p);
       } else if (it.type === 'wasp') {
         const dir = Math.cos(2 * Math.PI * CFG.waspHz * (game.t - it.born)) >= 0 ? 1 : -1;
-        ctx.scale(dir, 1);
-        ctx.drawImage(spr, -40, -32);
+        // Flug-Bob statt 2-Frame-Flügelschlag (ein PNG)
+        ctx.rotate(Math.sin(game.t * 16) * 0.08 * dir);
+        ctx.scale(dir, 1 + Math.sin(game.t * 22) * 0.04);
       } else {
         const pulse = 1 + Math.sin(game.t * 6) * 0.08;
         ctx.scale(pulse, pulse);
-        ctx.drawImage(spr, -38, -38);
       }
+      ctx.drawImage(e.cv, -e.w / 2, -e.h / 2, e.w, e.h);
       ctx.restore();
     }
 
@@ -370,12 +370,12 @@ export class FreshSkin {
         this.catchGhosts.splice(i, 1);
         continue;
       }
-      const t = this.whiteTint(gh.spr);
+      const t = this.whiteTint(gh.spr.cv);
       ctx.save();
       ctx.translate(gh.x | 0, gh.y | 0);
-      const k = 1 + gh.age / gh.ttl * 0.15;
+      const k = 1 + (gh.age / gh.ttl) * 0.15;
       ctx.scale(k, k);
-      ctx.drawImage(t, -t.width / 2, -t.height / 2);
+      ctx.drawImage(t, -gh.spr.w / 2, -gh.spr.h / 2, gh.spr.w, gh.spr.h);
       ctx.restore();
     }
 
