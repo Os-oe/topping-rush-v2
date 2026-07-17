@@ -125,7 +125,7 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
   await page.evaluate(() => {
     const g = window.__TR.game;
     g.stop();
-    // 14 Catches = 91 (Rampe 10..16) + 7×16 = 203 Punkte (unter Champ=300)
+    // 14 Catches = 91 (Rampe 10..16) + 7×16 = 203 + 30 Füll-Bonus (10.) = 233 (unter Champ=300)
     for (let i = 0; i < 14; i++) {
       g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
       g.update(1 / 60);

@@ -64,6 +64,9 @@ export class Game {
     this.items = [];
     this.frenzy = false;
 
+    this.fill = 0; // v2.2: Becher-Füllstand (0..fillTarget), nur Zutaten
+    this.fillVariant = null; // zuletzt gefangene Frucht (Flüssigkeits-Farbe)
+
     this.spawnedTotal = 0;
     this.spawnedBad = 0;
     this.lastBadT = -99;
@@ -342,6 +345,14 @@ export class Game {
       this.onEvent('catch', { item: it, pts, streak: this.streak });
       if (this.streak > 0 && this.streak % 5 === 0) {
         this.onEvent('comboMilestone', { streak: this.streak });
+      }
+      // v2.2: Füllstand — Bombe/Wespe/Power-Ups zählen NICHT
+      this.fill++;
+      this.fillVariant = it.variant;
+      if (this.fill >= CFG.fillTarget) {
+        this.fill = 0;
+        this.score += CFG.fillBonus; // flach, nicht frenzy-multipliziert (dokumentiert)
+        this.onEvent('drinkComplete', { bonus: CFG.fillBonus });
       }
     } else if (it.type === 'bomb') {
       // Nachtrag v2.1: −30 Punkte (Score-Floor 0) + Combo → 0

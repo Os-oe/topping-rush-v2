@@ -247,6 +247,12 @@ class AudioSys {
         this.tone({ type: 'square', f0: 1050, dur: 0.045, vol: 0.12, delay: 0.14 });
         this.tone({ type: 'square', f0: 1050, dur: 0.045, vol: 0.1, delay: 0.28 });
         break;
+      case 'drinkKling':
+        // v2.2: kurzes Glas-Kling zum „DRINK FERTIG!"-Moment
+        this.tone({ type: 'sine', f0: 1568, dur: 0.12, vol: 0.18 });
+        this.tone({ type: 'sine', f0: 2093, dur: 0.26, vol: 0.16, delay: 0.06 });
+        this.tone({ type: 'triangle', f0: 3136, dur: 0.18, vol: 0.07, delay: 0.06 });
+        break;
       case 'countTick':
         this.tone({ type: 'square', f0: 880, dur: 0.07, vol: 0.16 });
         break;
@@ -311,6 +317,9 @@ class AudioSys {
         break;
       case 'powerupEnding':
         this.play('powerupEnd');
+        break;
+      case 'drinkComplete':
+        this.play('drinkKling');
         break;
       case 'despawn':
         this.stopContinuous(data.id);

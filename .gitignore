@@ -5,3 +5,4 @@ shots
 .env
 .vercel
 .admin-pin.local
+.env*.local

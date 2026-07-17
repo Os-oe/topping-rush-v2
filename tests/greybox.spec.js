@@ -184,6 +184,39 @@ test.describe('Greybox — Kernloop', () => {
     expect(r.nextPts).toBe(10); // Combo neu ab Basis
   });
 
+  test('Füllstand (v2.2): 10 Zutaten = Becher voll → +30 Bonus + Reset; Bad/PU zählen nicht', async ({ page }) => {
+    await page.goto('/?seed=42');
+    await page.evaluate(() => window.__TR.newGame({ autoSpawn: false }));
+    const r = await page.evaluate(() => {
+      const g = window.__TR.game;
+      g.stop();
+      const catchTop = () => {
+        g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
+        g.update(1 / 60);
+      };
+      // Bombe, Power-Up und Wespe ändern den Füllstand NICHT
+      g.spawnItem('bomb', { x: g.cup.x, y: g.cupY - 5 });
+      g.update(1 / 60);
+      g.spawnItem('powerup', { x: g.cup.x, y: g.cupY - 5, variant: 'slowmo' });
+      g.update(1 / 60);
+      g.spawnItem('wasp', { x: g.cup.x, y: g.cupY - 5 });
+      g.items[g.items.length - 1].baseX = g.cup.x;
+      g.update(1 / 60);
+      const fillAfterBad = g.fill;
+      for (let i = 0; i < 9; i++) catchTop();
+      const fillAt9 = g.fill;
+      const scoreAt9 = g.score;
+      catchTop(); // 10. Catch → „DRINK FERTIG!" +30, Becher leert
+      return { fillAfterBad, fillAt9, scoreAt9, fillAfter: g.fill, delta: g.score - scoreAt9, variant: g.fillVariant };
+    });
+    expect(r.fillAfterBad).toBe(0);
+    expect(r.fillAt9).toBe(9);
+    expect(r.fillAfter).toBe(0); // Reset nach Voll-Bonus
+    // 10. Catch: 16 (Basis+Cap-Combo) + 30 Voll-Bonus (flach, dokumentiert)
+    expect(r.delta).toBe(16 + 30);
+    expect(r.variant).toBe('nar'); // Flüssigkeits-Farbe = letzte Frucht
+  });
+
   test('Spawn-Kurve + Fairness über volle 60-s-Simulation (Seed 7)', async ({ page }) => {
     await page.goto('/?seed=7');
     await page.evaluate(() => window.__TR.newGame({ autoSpawn: true, seed: 7 }));

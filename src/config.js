@@ -47,6 +47,12 @@ export const CFG = {
 
   // Bad-Item-Effekte (Nachtrag v2.1: Bombe −30 statt Chili-Becher-Schrumpf)
   bombPenalty: 30,         // Punktabzug beim Bomben-Fang (Score-Floor 0), Combo → 0
+
+  // Becher-Füllstand (Nachtrag v2.2): nur echte Zutaten füllen; voll → Bonus.
+  // Entscheidung dokumentiert: Bonus flach +30, NICHT frenzy-multipliziert
+  // (Konzept nennt nur „Bonus +30").
+  fillTarget: 10,          // Catches bis „DRINK FERTIG!"
+  fillBonus: 30,
   waspAmp: 50,             // px Sinus-Amplitude
   waspHz: 1.0,             // Sinus-Frequenz
 

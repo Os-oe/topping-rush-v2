@@ -15,6 +15,12 @@ const TOPPING_COLORS = {
 };
 // Konfetti-Palette (ŞERBET-RUSH-Banner + Frenzy-Burst)
 const CONFETTI = ['#2EC4B6', '#FF6B6B', '#FFC53D', '#D81E5B', '#3FA34D'];
+// v2.2: Flüssigkeits-Farbe je Frucht (Becher-Füllstand) — an Sprite-Palette angelehnt
+const LIQUID_COLORS = {
+  nar: '#D7263D', limon: '#F5C518', karpuz: '#E05780', nane: '#3FA34D',
+  visne: '#8E1F3B', portakal: '#F58A1F', cilek: '#E63946', cay: '#C87B2E',
+};
+const hexRgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
 
 function easeOutBack(t) {
   const c1 = 1.70158;
@@ -44,6 +50,11 @@ export class FreshSkin {
     this.bgSize = '';
     this._tintCache = new Map();
     this._redCache = new Map();
+    // v2.2: Becher-Füllstand — angezeigtes Level lerpt zum Sim-Stand,
+    // Farbe lerpt zur zuletzt gefangenen Frucht, Drain-Animation ~300 ms
+    this.liquidLevel = 0;
+    this.liquidRGB = null;
+    this.drain = null; // {age, dur}
   }
 
   // ---------- Helle Bühne: 3-Stop-Verlauf + Rand-Blobs + Iznik-Layer ----------
@@ -252,6 +263,16 @@ export class FreshSkin {
       this.schedule(50, () => this.particles.spawn(12, it.x, it.y, 'yellow', { size: 9 }));
       this.schedule(100, () => this.addPopup(label, it.x, it.y - 16, C.yellow, 24));
       navigator.vibrate?.(12);
+    } else if (type === 'drinkComplete') {
+      // v2.2: „DRINK FERTIG! +30" — Mini-Konfetti am Becher + Drain ~300 ms
+      this.liquidLevel = 1;
+      this.drain = { age: 0, dur: 0.3 };
+      this.schedule(50, () => {
+        ['teal', 'yellow', 'magenta', 'lime'].forEach((k, i) => {
+          this.particles.spawn(4, game.cup.x + (i - 1.5) * 18, game.cupY - 4, k, { size: 8, up: 150 });
+        });
+      });
+      this.schedule(100, () => this.addPopup('DRINK FERTIG! +30', game.cup.x, game.cupY - 48, C.lime, 24));
     } else if (type === 'frenzy') {
       // ŞERBET-RUSH-Banner konfetti-bunt (statt Neon)
       this.centerText = {
@@ -289,6 +310,74 @@ export class FreshSkin {
     }
     this.fx.setTransform(game.dpr, 0, 0, game.dpr, 0, 0);
     return this.fx;
+  }
+
+  // ---------- v2.2: Becher-Füllstand ----------
+  // Flüssigkeits-Layer im Becher-Transform (Pivot Becherboden): Trapez-Geometrie
+  // wie drawCup (taper/edge identisch), Wellen-Oberkante, Farbe = letzte Frucht
+  // mit Lerp, Drain-Animation nach „DRINK FERTIG!". Kein Blur, reine Pfade.
+  drawLiquid(ctx, game, w, dt) {
+    // Ziel-Level aus der Sim; während Drain zählt nur die Ablauf-Animation
+    let lvl;
+    if (this.drain) {
+      this.drain.age += dt;
+      lvl = Math.max(0, 1 - this.drain.age / this.drain.dur);
+      if (this.drain.age >= this.drain.dur) this.drain = null;
+      this.liquidLevel = lvl;
+    } else {
+      const tgt = game.fill / CFG.fillTarget;
+      this.liquidLevel += (tgt - this.liquidLevel) * Math.min(1, dt * 9);
+      lvl = this.liquidLevel;
+    }
+    if (lvl < 0.02) return;
+
+    // Farbe: Lerp zur zuletzt gefangenen Frucht
+    const tgtRGB = hexRgb(LIQUID_COLORS[game.fillVariant] || LIQUID_COLORS.nar);
+    if (!this.liquidRGB) this.liquidRGB = tgtRGB.slice();
+    const f = Math.min(1, dt * 6);
+    for (let i = 0; i < 3; i++) this.liquidRGB[i] += (tgtRGB[i] - this.liquidRGB[i]) * f;
+    const [r, g, b] = this.liquidRGB.map((v) => Math.round(v));
+
+    // Geometrie identisch zu drawCup: h=cupH, edge=7, taper=min(10, w*0.12)
+    const h = CFG.cupH;
+    const edge = 7;
+    const taper = Math.min(10, w * 0.12);
+    const inset = 3.5;
+    const yBottom = -edge - 1;
+    const yTop = yBottom - lvl * (h - edge - 15); // Deckel-Luft: Rim-Band bleibt frei
+    const halfAt = (y) => {
+      const p = (-y - edge) / (h - edge); // 0 unten → 1 oben
+      return w / 2 - taper + p * taper - inset;
+    };
+    ctx.beginPath();
+    const hTop = halfAt(yTop);
+    const waveA = 1.8;
+    const seg = 6;
+    ctx.moveTo(-hTop, yTop + Math.sin(game.t * 4) * waveA);
+    for (let i = 1; i <= seg; i++) {
+      const x = -hTop + (2 * hTop * i) / seg;
+      ctx.lineTo(x, yTop + Math.sin(game.t * 4 + i * 1.15) * waveA);
+    }
+    ctx.lineTo(halfAt(yBottom), yBottom);
+    ctx.lineTo(-halfAt(yBottom), yBottom);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(${r},${g},${b},0.88)`;
+    ctx.fill();
+    // Meniskus-Linie (dunklere Oberkante statt Glow)
+    ctx.strokeStyle = `rgba(${(r * 0.72) | 0},${(g * 0.72) | 0},${(b * 0.72) | 0},0.9)`;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(-hTop, yTop + Math.sin(game.t * 4) * waveA);
+    for (let i = 1; i <= seg; i++) {
+      const x = -hTop + (2 * hTop * i) / seg;
+      ctx.lineTo(x, yTop + Math.sin(game.t * 4 + i * 1.15) * waveA);
+    }
+    ctx.stroke();
+    // dezenter Glanz-Punkt auf der Flüssigkeit (Sticker-DNA)
+    ctx.fillStyle = 'rgba(255,255,255,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(-hTop * 0.45, yTop + 6, 5, 2.6, -0.3, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   // Text mit Doppelkontur: 1–2 px weiße Außenkontur um 4–6 px dunkle Kontur
@@ -442,6 +531,7 @@ export class FreshSkin {
     ctx.rotate(rot);
     ctx.scale(sx, sy);
     ctx.drawImage(cv, -wQ / 2 - pad, -CFG.cupH - pad); // Pivot: Becherboden
+    this.drawLiquid(ctx, game, wQ, dt); // v2.2: Füllstand im selben Transform
     ctx.restore();
 
     // Power-Up-Collect: Ring-Puls (normales Blending)
