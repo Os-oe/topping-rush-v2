@@ -1,16 +1,17 @@
-/* Admin — funktional, mobil bedienbar */
+/* Admin V2 „Fresh" — funktional, mobil bedienbar, heller Stil */
 .admin-body { overflow-y: auto; }
 .admin-wrap { max-width: 520px; margin: 0 auto; padding: 24px 16px 60px; display: flex; flex-direction: column; gap: 18px; }
-.admin-wrap h1 { font-size: 1.4rem; }
+.admin-wrap h1 { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.4rem; }
 #pin-gate { display: flex; flex-direction: column; gap: 12px; max-width: 260px; }
-#pin-gate input { padding: 12px; font-size: 1.6rem; text-align: center; letter-spacing: 0.5em; background: #11121f; border: 2px solid #2a2c44; border-radius: 12px; color: #eaf6ff; width: 100%; }
+#pin-gate input { padding: 12px; font-size: 1.6rem; text-align: center; letter-spacing: 0.5em; background: var(--cream); border: 2.5px solid var(--line); border-radius: 999px; color: var(--ink); width: 100%; font-family: 'Baloo 2', sans-serif; }
 #admin-panel { display: flex; flex-direction: column; gap: 16px; }
-.admin-card { background: #11121f; border: 1px solid #2a2c44; border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
-.admin-card h2 { font-size: 1rem; }
-.admin-card input[type="text"], .admin-card input:not([type]) { padding: 10px 12px; background: #0a0a14; border: 1px solid #2a2c44; border-radius: 10px; color: #eaf6ff; width: 100%; }
-.btn-small { padding: 10px 18px; border: none; border-radius: 10px; background: #00F0FF; color: #06121a; font-weight: 700; cursor: pointer; align-self: flex-start; }
-.btn-danger { background: #FF3131; color: #fff; }
-.danger p { opacity: 0.7; font-size: 0.85rem; }
+.admin-card { background: var(--cream); border: 2.5px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+.admin-card h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; }
+.admin-card input[type="text"], .admin-card input:not([type]) { padding: 10px 14px; background: #FFFFFF; border: 2px solid var(--line); border-radius: 999px; color: var(--ink); width: 100%; font-family: 'Nunito', sans-serif; font-weight: 600; }
+.btn-small { padding: 10px 20px; border: 2.5px solid var(--ink); border-radius: 999px; background: var(--teal); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; cursor: pointer; align-self: flex-start; box-shadow: 0 3px 0 var(--ink); }
+.btn-small:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
+.btn-danger { background: var(--red); color: #fff; }
+.danger p { color: var(--ink-soft); font-size: 0.85rem; }
 .dur-row { display: flex; align-items: center; gap: 14px; }
-.dur-row input { flex: 1; }
-.admin-msg { min-height: 1.2em; font-weight: 700; }
+.dur-row input { flex: 1; accent-color: var(--teal); }
+.admin-msg { min-height: 1.2em; font-weight: 800; }

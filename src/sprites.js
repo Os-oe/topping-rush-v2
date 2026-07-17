@@ -509,7 +509,8 @@ function drawCapsule(kind) {
   return cv;
 }
 
-// ---------- Becher (hot = Chili-Glühen, 3 s rötlich) ----------
+// ---------- Becher V2 „Fresh" (prozedural — MIXR-Lesson: Gefäße nie als KI-Layer)
+// Cremeweiß, braune Kontur, Pseudo-3D-Bodenkante; hot = Chili-Glühen (warm getönt).
 function drawCup(w, hot) {
   const pad = 26;
   const h = CFG.cupH;
@@ -518,47 +519,109 @@ function drawCup(w, hot) {
   const lipL = pad;
   const lipR = pad + w;
   const taper = Math.min(10, w * 0.12);
-  const main = hot ? C.orange : C.cyan;
-  glow(x, main, 16);
-  x.fillStyle = hot ? 'rgba(70,16,0,0.6)' : 'rgba(0,40,50,0.55)';
+  const edge = 7; // Pseudo-3D-Bodenkante
+  const body = hot ? '#FFE3CD' : '#FFFDF6';
+  const bodyDark = hot ? '#F5C6A0' : '#F3E4CC'; // Kante = dunklere Bodenfläche
+  const outline = hot ? '#8C2F1B' : C.outline;
+  const accent = hot ? C.orange : C.teal;
+
+  // Körper (Trapez, unten leicht schmaler)
+  x.fillStyle = body;
+  x.beginPath();
+  x.moveTo(lipL, top);
+  x.lineTo(lipR, top);
+  x.lineTo(lipR - taper, top + h - edge);
+  x.lineTo(lipL + taper, top + h - edge);
+  x.closePath();
+  x.fill();
+  // Bodenkante (Pseudo-3D)
+  x.fillStyle = bodyDark;
+  x.beginPath();
+  x.moveTo(lipL + taper * 0.85, top + h - edge);
+  x.lineTo(lipR - taper * 0.85, top + h - edge);
+  x.lineTo(lipR - taper, top + h);
+  x.lineTo(lipL + taper, top + h);
+  x.closePath();
+  x.fill();
+  // Kontur um alles
+  x.strokeStyle = outline;
+  x.lineWidth = 3;
+  x.lineJoin = 'round';
   x.beginPath();
   x.moveTo(lipL, top);
   x.lineTo(lipR, top);
   x.lineTo(lipR - taper, top + h);
   x.lineTo(lipL + taper, top + h);
   x.closePath();
+  x.stroke();
+  x.beginPath();
+  x.moveTo(lipL + taper * 0.85, top + h - edge);
+  x.lineTo(lipR - taper * 0.85, top + h - edge);
+  x.stroke();
+  // Fangkante: Akzentband direkt unter dem Rand (Türkis / hot: Orange)
+  x.fillStyle = accent;
+  x.beginPath();
+  x.moveTo(lipL + 1.5, top + 3);
+  x.lineTo(lipR - 1.5, top + 3);
+  x.lineTo(lipR - 2.5, top + 10);
+  x.lineTo(lipL + 2.5, top + 10);
+  x.closePath();
   x.fill();
-  glow(x, main, 9);
-  x.strokeStyle = hot ? '#ffd9c4' : '#d9fdff';
+  // Rand-Deckstrich (betonte Fangkante)
+  x.strokeStyle = outline;
+  x.lineWidth = 3.5;
+  x.lineCap = 'round';
+  x.beginPath();
+  x.moveTo(lipL - 2, top);
+  x.lineTo(lipR + 2, top);
+  x.stroke();
+  // Glanz-Streifen links (dezente Politur)
+  x.strokeStyle = 'rgba(255,255,255,0.85)';
   x.lineWidth = 3;
-  x.stroke();
-  // Becherrand betont (Fangkante!)
-  glow(x, hot ? C.blinkRed : C.cyan, 12);
-  x.strokeStyle = '#ffffff';
-  x.lineWidth = 4;
   x.beginPath();
-  x.moveTo(lipL - 3, top);
-  x.lineTo(lipR + 3, top);
-  x.stroke();
-  x.shadowBlur = 0;
-  x.strokeStyle = hot ? 'rgba(255,103,0,0.4)' : 'rgba(0,240,255,0.35)';
-  x.lineWidth = 2;
-  x.beginPath();
-  x.moveTo(lipL + w * 0.28, top + 6);
-  x.lineTo(lipL + taper + w * 0.2, top + h - 6);
+  x.moveTo(lipL + w * 0.16, top + 14);
+  x.lineTo(lipL + taper * 0.7 + w * 0.12, top + h - edge - 6);
   x.stroke();
   return { cv, pad };
 }
 
-// ---------- Partikel-Dot (EIN weiches Sprite pro Farbe) ----------
+// ---------- Splash-Tropfen (EIN konturiertes Sprite pro Farbe, kein Glow) ----------
 function drawDot(color) {
-  const [cv, x] = offscreen(48, 48);
-  const g = x.createRadialGradient(24, 24, 0, 24, 24, 22);
-  g.addColorStop(0, '#ffffff');
-  g.addColorStop(0.25, color);
-  g.addColorStop(1, 'rgba(0,0,0,0)');
+  const [cv, x] = offscreen(28, 32);
+  // Tropfenform: Kreis mit leichter Spitze oben
+  x.fillStyle = color;
+  x.strokeStyle = C.outline;
+  x.lineWidth = 2.5;
+  x.beginPath();
+  x.moveTo(14, 4);
+  x.bezierCurveTo(19, 10, 24, 14, 24, 20);
+  x.arc(14, 20, 10, 0, Math.PI, false);
+  x.bezierCurveTo(4, 14, 9, 10, 14, 4);
+  x.closePath();
+  x.fill();
+  x.stroke();
+  // Mini-Glanzpunkt
+  x.fillStyle = 'rgba(255,255,255,0.9)';
+  x.beginPath();
+  x.arc(10.5, 17, 2.4, 0, Math.PI * 2);
+  x.fill();
+  return cv;
+}
+
+// ---------- Bodenschatten-Ellipse (vorgerendert weich — KEIN Laufzeit-Blur) ----------
+function drawShadow() {
+  const [cv, x] = offscreen(96, 48);
+  const g = x.createRadialGradient(48, 24, 4, 48, 24, 44);
+  g.addColorStop(0, CFG.shadow.color);
+  g.addColorStop(0.55, CFG.shadow.color.replace(/[\d.]+\)$/, '0.14)'));
+  g.addColorStop(1, 'rgba(60,30,20,0)');
+  x.save();
+  x.translate(48, 24);
+  x.scale(1, 0.42); // Ellipse
+  x.translate(-48, -24);
   x.fillStyle = g;
-  x.fillRect(0, 0, 48, 48);
+  x.fillRect(0, 0, 96, 48);
+  x.restore();
   return cv;
 }
 
@@ -580,15 +643,18 @@ export function buildSprites() {
     wasp: [drawWasp(0), drawWasp(1)],
     capsules: { magnet: drawCapsule('magnet'), xxl: drawCapsule('xxl'), slowmo: drawCapsule('slowmo') },
     dots: {
-      cyan: drawDot(C.cyan),
-      magenta: drawDot(C.magenta),
-      lime: drawDot(C.lime),
-      orange: drawDot(C.orange),
-      yellow: drawDot(C.yellow),
-      red: drawDot(RUBY),
-      amber: drawDot(AMBER),
-      white: drawDot('#cfe8ff'),
+      // Splash-Farben V2: satte Fruchttöne, dunkel genug für hellen BG
+      teal: drawDot(C.teal),
+      cyan: drawDot(C.teal), // Legacy-Key
+      magenta: drawDot('#E05780'),
+      lime: drawDot('#3FA34D'),
+      orange: drawDot('#FF8C42'),
+      yellow: drawDot('#FFC53D'),
+      red: drawDot('#E63946'),
+      amber: drawDot('#E8A33D'),
+      white: drawDot('#FFFFFF'),
     },
+    shadow: drawShadow(),
     cup(w, hot = false) {
       const key = `${Math.round(w)}|${hot ? 1 : 0}`;
       if (!cupCache.has(key)) cupCache.set(key, drawCup(Math.round(w), hot));

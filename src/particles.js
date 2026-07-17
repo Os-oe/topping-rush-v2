@@ -1,5 +1,6 @@
-// Partikel-Pool: max 150, EIN vorgerendertes Dot-Sprite pro Farbe,
-// Zeichnen ausschließlich drawImage + globalCompositeOperation 'lighter'.
+// Partikel-Pool V2 „Fresh": max 150, EIN vorgerendertes konturiertes
+// Tropfen-Sprite pro Farbe (dunkle Outline #4A2E1F), normales Alpha-Blending —
+// KEIN 'lighter', kein Glow. Splash: 300–500 ms, Gravity, Fade+Shrink.
 import { CFG } from './config.js';
 
 export class ParticlePool {
@@ -10,8 +11,8 @@ export class ParticlePool {
   }
 
   spawn(n, x, y, color, opts = {}) {
-    const speedMin = opts.speedMin ?? 200;
-    const speedMax = opts.speedMax ?? 400;
+    const speedMin = opts.speedMin ?? 180;
+    const speedMax = opts.speedMax ?? 360;
     for (let i = 0; i < n; i++) {
       const p = this.pool[this.cursor];
       this.cursor = (this.cursor + 1) % this.pool.length; // ältester wird recycelt
@@ -21,18 +22,19 @@ export class ParticlePool {
       p.x = x;
       p.y = y;
       p.vx = Math.cos(a) * sp;
-      p.vy = Math.sin(a) * sp - (opts.up ?? 60);
-      p.ttl = 0.4 + Math.random() * 0.4; // 0,4–0,8 s
+      p.vy = Math.sin(a) * sp - (opts.up ?? 80);
+      p.ttl = 0.3 + Math.random() * 0.2; // 300–500 ms (Konzept)
       p.age = 0;
-      p.size = (opts.size ?? 14) * (0.7 + Math.random() * 0.6);
+      p.size = (opts.size ?? 9) * (0.7 + Math.random() * 0.6); // 6–12 px
       p.color = color;
-      p.gravity = opts.gravity ?? 500;
+      p.gravity = opts.gravity ?? 700;
+      p.rot = Math.random() * Math.PI * 2;
+      p.rotV = (Math.random() - 0.5) * 8;
     }
   }
 
   updateAndDraw(ctx, dt) {
     const dots = this.sprites.dots;
-    ctx.globalCompositeOperation = 'lighter';
     for (const p of this.pool) {
       if (!p.live) continue;
       p.age += dt;
@@ -43,12 +45,17 @@ export class ParticlePool {
       p.vy += p.gravity * dt;
       p.x += p.vx * dt;
       p.y += p.vy * dt;
+      p.rot += p.rotV * dt;
       const k = 1 - p.age / p.ttl; // Fade + Shrink
-      const s = p.size * (0.4 + 0.6 * k);
-      ctx.globalAlpha = k;
-      ctx.drawImage(dots[p.color] || dots.white, (p.x - s / 2) | 0, (p.y - s / 2) | 0, s | 0, s | 0);
+      const s = p.size * (0.5 + 0.5 * k);
+      const spr = dots[p.color] || dots.white;
+      ctx.save();
+      ctx.translate(p.x | 0, p.y | 0);
+      ctx.rotate(p.rot);
+      ctx.globalAlpha = Math.min(1, k * 1.6); // erst spät ausfaden — Tropfen bleiben satt
+      ctx.drawImage(spr, -s / 2, -s / 2, s, s * 1.15); // leicht länglich = Tropfenform
+      ctx.restore();
     }
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
   }
 }

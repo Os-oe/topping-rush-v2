@@ -17,7 +17,7 @@ async function api(action, value) {
 function msg(text, ok = true) {
   const el = $('admin-msg');
   el.textContent = text;
-  el.style.color = ok ? '#39FF14' : '#FF3131';
+  el.style.color = ok ? '#3FA34D' : '#D7263D';
   setTimeout(() => (el.textContent = ''), 3000);
 }
 

@@ -61,20 +61,35 @@ export const CFG = {
   slowmoDur: 3,
   slowmoFactor: 0.5,
 
-  // Partikel / Rendering
+  // Partikel / Rendering — V2 „Fresh": kein Trail-Fade, kein additives
+  // Blending, kein Laufzeit-shadowBlur. clearRect + vorgerenderte Schatten.
   particleMax: 150,
   dprCap: 2,
-  trailFade: 'rgba(10,10,20,0.3)',
-  bg: '#0a0a14',
+  bg: '#FFF6E8', // oberster Stop des 3-Stop-Verlaufs (Fallback-Fläche)
+  bgStops: ['#FFF6E8', '#FFE3C2', '#FFD1C4'], // Creme → Pfirsich → Rosé
+  spriteSize: 68, // Fallgröße px @390-px-Screen (Konzept: 64–72, nie <56)
 
-  // Palette
+  // Bodenschatten-Ellipse unter jedem fallenden Objekt (Konzept-Pflicht)
+  shadow: {
+    color: 'rgba(60,30,20,0.22)', // 0.18–0.25
+    offsetYFrac: 0.08,            // 6–10 % der Objekthöhe
+    blurFrac: 0.30,               // Blur ≈ 30 % der Breite (vorgerendert)
+  },
+
+  // Palette V2 „Fresh" (UI max. 2 Akzentfarben: Türkis + Koralle)
   colors: {
-    cyan: '#00F0FF',
-    magenta: '#FF2D95',
-    lime: '#39FF14',
-    orange: '#FF6700',
-    blinkRed: '#FF3131',
-    yellow: '#FFF200',
+    outline: '#4A2E1F',  // dunkle Kontur (Sprites, Buttons, Popups)
+    teal: '#2EC4B6',     // primär (Iznik-Türkis-Brücke)
+    coral: '#FF6B6B',    // sekundär
+    cream: '#FFFDF6',    // Panels / Becher
+    ink: '#4A2E1F',      // Text auf hellem Grund
+    // Feedback-Farben (sat, dunkel genug für hellen BG)
+    lime: '#3FA34D',     // Fang/Positiv (Blattgrün statt Neon-Lime)
+    orange: '#F1641E',   // Chili-Warnung
+    blinkRed: '#D7263D', // Chili-Rot
+    yellow: '#F5A623',   // Power-Ups (sattes Amber statt Neon-Gelb)
+    magenta: '#D81E5B',  // Combo-Highlights (Beere statt Neon-Magenta)
+    cyan: '#2EC4B6',     // Legacy-Key → zeigt auf Türkis (Becher-Akzente)
   },
 };
 

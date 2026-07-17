@@ -1,7 +1,7 @@
 // TOPPING RUSH — Screen-Flow: Start → Countdown → Spiel → Ergebnis.
 import { CFG } from './config.js';
 import { Game } from './game.js';
-import { NeonSkin } from './neon.js';
+import { FreshSkin } from './fresh.js';
 import './audio.js'; // registriert window.__audio (Init erst nach User-Geste)
 
 const $ = (id) => document.getElementById(id);
@@ -105,7 +105,7 @@ function startGame() {
     seed: state.seed ?? undefined,
     onEnd: onRoundEnd,
     onEvent: onGameEvent,
-    skin: new NeonSkin(),
+    skin: new FreshSkin(),
   });
   state.game = game;
   game.resize();
@@ -323,10 +323,10 @@ renderMute();
 // ---------- Boot ----------
 show('start');
 loadBoard();
-// Beide Bungee-Faces (latin + latin-ext) laden, bevor „ŞERBET-RUSH ×2!" auf
+// Beide Baloo-2-Faces (latin + latin-ext) laden, bevor „ŞERBET-RUSH ×2!" auf
 // dem Canvas gebraucht wird (Canvas nutzt nur bereits geladene Fonts)
-document.fonts?.load('26px Bungee', 'ŞERBET-RUSH ×2! A').catch(() => {});
-document.fonts?.load('700 26px Orbitron', '0123').catch(() => {});
+document.fonts?.load('800 26px "Baloo 2"', 'ŞERBET-RUSH ×2! A0123').catch(() => {});
+document.fonts?.load('700 16px Nunito', 'Doppelte Punkte!').catch(() => {});
 
 // ---------- Test-Hooks (deterministische Systemtests) ----------
 window.__TR = {
@@ -346,7 +346,7 @@ window.__TR = {
       autoSpawn: opts.autoSpawn ?? false,
       onEnd: onRoundEnd,
       onEvent: onGameEvent,
-      skin: opts.greybox ? null : new NeonSkin(),
+      skin: opts.greybox ? null : new FreshSkin(),
     });
     state.game = game;
     game.resize();
