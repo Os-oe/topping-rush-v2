@@ -1,86 +1,72 @@
-# Lessons — TOPPING RUSH Build (2026-07-17)
+# Lessons — TOPPING RUSH V2 „Fresh" (2026-07-17)
 
-Erkenntnisse aus dem autonomen One-Prompt-Lauf (op-build), wiederverwendbar für
-künftige Canvas-Game-/Event-Tool-Builds.
+Iterations-Lauf auf V1 (Reskin ohne Mechanik-Änderung). Erkenntnisse,
+wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gültig:
+[topping-rush/LESSONS.md](https://github.com/Os-oe/topping-rush).
 
-## Canvas / Neon-Rendering
-- **Trail-Fade + Text vertragen sich nicht.** Floating-Scores/Banner auf dem
-  Spiel-Canvas ghosten unter dem Motion-Blur (rgba-Fill statt clearRect).
-  Lösung: zweites Overlay-Canvas nur für Texte/Flash, pro Frame gecleart —
-  Spiel-Layer behält den Blur, Schrift bleibt crisp. Kostet nichts (59,9 fps).
-- **Statisches Hintergrund-Muster unter Trail-Fade:** Muster nicht separat
-  zeichnen, sondern Hintergrund (Farbe + Girih-Gitter) als bgSprite vorrendern
-  und DIESES Sprite mit `globalAlpha 0.3` als Trail-Fill drawImagen. Ergebnis:
-  Motion-Blur UND dauerhaft sichtbares (dezentes) Muster in einem Draw.
-- **`[hidden]` verliert gegen ID-Selektoren** (`#screen-game{display:block}`
-  schlägt `.screen[hidden]`). Global `[hidden]{display:none!important}` setzen —
-  zwei „unsichtbare Screens fangen Taps"-Bugs (Start + Board) mit einer Regel gefixt.
-- Becher-Breite (XXL/Schrumpf) am **Ende** von update() neu berechnen, sonst
-  wirken Catch-Effekte erst im Folgeframe (Test deckte es auf).
-- Cup-Sprite-Cache bei animierter Breite **quantisieren** (4-px-Stufen), sonst
-  füllt der Gleit-Tween den Cache mit ~90 Offscreen-Canvases.
+## Reskin-Architektur (Fork-Muster)
 
-## Playwright
-- **Rate-Limit (10/60 s) ist Suite-globaler State**: Browser-Fetches (::1) und
-  request-Fixture (127.0.0.1) landen in ZWEI IP-Buckets → flaky. baseURL auf
-  `127.0.0.1` festnageln und Submits pro Suite-Lauf budgetieren (Rate-Limit-Test
-  als letzter Test im letzten Spec).
-- Sim-Tests deterministisch: `game.stop()` (RAF aus) + manuelles
-  `update(1/60)`-Stepping — Combo-Mathe, Fairness-Regeln und 60-s-Vollsimulation
-  laufen so in <100 ms statt in Echtzeit.
-- Balance-Bots brauchen **menschliche Fehlerprofile** (Reaktion 350–400 ms,
-  Entscheidungsintervall 700–850 ms, Wespen-Blindheit, „Fehlgriff"-Chance auf
-  Bad-Items), sonst spielen sie übermenschlich — der Becher quert den Screen in
-  ~170 ms, jeder naive Bot fängt >90 %.
+- **Skin-Interface trägt den kompletten Look-Swap:** V1 hatte Rendering sauber
+  in `NeonSkin` gekapselt (handleEvent + render + eigenes fx-Overlay). Der
+  V2-Umbau ersetzte EINE Datei (neon.js → fresh.js) + Styles + Sprites — die
+  20 Mechanik-Tests liefen ohne eine einzige Anpassung durch. Merksatz: Wer den
+  Skin als Klasse mit Event-API baut, bekommt die V2 fast geschenkt.
+- **Suite als Mechanik-Beweis:** identische Tests vor/nach dem Reskin (2× 20/20)
+  sind der billigste „Mechanik NICHT angefasst"-Beleg — kein Diff-Review nötig.
+- **Fremd-Server auf dem Playwright-Port** (eigener Sichtcheck-Server von
+  vorhin) lässt die Suite mit „port is already used" sterben, nicht flaky
+  werden. Vor test:2x immer `lsof -ti :4573 | xargs kill`.
 
-## Balancing (Konzept-Kalibrierung)
-- Mit Cap +10 und „Miss resettet nicht" lagen die Bänder unerreichbar hoch
-  (Casual ~720, Profi ~1420). Die zwei im Konzept **markierten** Stellschrauben
-  gedreht: Combo-Cap +10 → **+6** und **Miss resettet Combo**. Ergebnis:
-  Casual 394 (Ziel 300–500) · Profi 1270 (Ziel 900–1300). Frenzy ×2 ist der
-  heimliche Score-Inflator (+~36 % aufs Grundergebnis) — bei künftigen
-  Score-Band-Designs zuerst die Frenzy-Doublings durchrechnen.
+## NB2-Sprite-Serie (MIXR-Pipeline, dritter bestätigter Lauf)
 
-## Audio
-- WebAudio-Synth erneut die richtige Wahl (16 SFX, 0 €): kontinuierliche
-  Sounds (Sizzle/Summen/Shimmer) als **Nodes pro Item-ID** mit Map-Cleanup bei
-  Catch/Despawn/Rundenende — Test prüft `continuous.size === 0`.
-- **Canvas nutzt nur bereits geladene Fonts:** latin-ext-Face (Ş) vor dem
-  ersten `fillText` explizit mit `document.fonts.load('26px Bungee', 'Ş…')`
-  vorladen, sonst rendert der Frenzy-Banner im Fallback-Font.
-- Suno-Loop „nahtlos": Tail-zu-Head-Crossfade via ffmpeg
-  (`acrossfade d=2` + concat) macht aus jedem ~60-s-Fenster einen sauberen Loop.
-- Orbitron hat **kein latin-ext** bei Google Fonts — für türkische Glyphen
-  (Ş/İ) Bungee (hat latin-ext) oder Systemfont einplanen.
+- **13/13 ohne Retry** — der Hebel war der wörtlich fixierte Stil-Anker-Prompt
+  im Konzept + i2i-Referenz. Serien-Konstanten VOR dem ersten Render einfrieren
+  (Outline-Farbe, Rim-Light, Highlight, Magenta-BG), nur die Objektbeschreibung
+  variieren.
+- **„Sticker style" liefert gratis eine weiße Außenkontur** — auf hellem BG ist
+  das die Objekt-Separation (gleiche Doppelkontur-Logik wie bei den Popups).
+  Für helle Themes: drin lassen, nicht wegprompten.
+- **Kritische Key-Fälle vorab entschärfen:** Wespenflügel „as SOLID pale
+  shapes (no transparency)" und Çay-Glas „completely filled, opaque, no
+  see-through areas" prompten — sonst frisst der Magenta-Key Löcher ins Objekt.
+- 1K-Auflösung reicht: Sprites landen eh auf 136–152-px-Boxen (2× Display).
 
-## Kultur-sensibles Event-Design (Nachtrag v1.1)
-- Bad-Item-Metaphern gegen den Veranstaltungskontext prüfen: Bombe im
-  Moschee-Umfeld = No-Go; Chilischote „ZU SCHARF!" trägt dieselbe Mechanik
-  ohne Kollateralschaden — Identitätswechsel kostete <1 h inkl. Sound/Tests.
-- Kultur-Layer trägt über **Kunst-/Getränkewelt** (Iznik-Farben, Girih-Geometrie,
-  Lale, Çay-Glas), nie über religiöse Symbole. Don't-Liste als eigener
-  Gate-Punkt dokumentieren — das diszipliniert jede Design-Entscheidung.
-- Substring-Blocklisten (LDNOOBW): Einträge < 4 Zeichen rauswerfen, sonst
-  blockt „ass" Namen wie „Passau".
+## Heller Look ohne Blur
 
-## Deploy / Betrieb
-- **Upstash-ENV fehlt beim Build → In-Memory-Fallback-Adapter** mit identischer
-  Schnittstelle (eine Catch-all-Function = ein warmer Container, Board bleibt
-  konsistent — MIXR-Muster). ⚠️ **TODO vor dem echten Event:** Im Vercel-Dashboard
-  die Marketplace-Integration „Upstash for Redis" ans Projekt hängen (liefert
-  `KV_REST_API_URL`/`KV_REST_API_TOKEN`, genau die Namen liest `lib/store.js`)
-  und redeployen — sonst leert ein Cold Start das Leaderboard.
-- Upstash-Client IMMER explizit konstruieren (`new Redis({url, token})`) —
-  `fromEnv()` erwartet UPSTASH_-Namen, Vercel-Marketplace liefert KV_-Namen.
-- `vercel deploy --prod` direkt (git push triggert keinen Build — bekanntes
-  Muster) + danach `vercel alias set <deploy-url> <domain>` + inhaltlicher
-  Live-Check (neues Feature, nie nur HTTP 200).
+- **Voll deckender BG-Sprite statt clearRect:** Verlauf + Blobs + Iznik-Layer
+  einmal vorrendern, pro Frame 1× drawImage — 59,9 fps Median (Vsync-Anschlag)
+  auf Pixel-7-Viewport trotz 0 Laufzeit-Blur-Tricks.
+- **Sprite-Entries `{cv, w, h}` mit sofortigem Kontur-Blob-Fallback:** Canvas
+  existiert synchron (Render crasht nie), PNG ersetzt den Blob onload —
+  robust gegen langsames Event-WLAN, ohne Async-Boot-Umbau.
+- **Bodenschatten = ein einziges vorgerendertes Radial-Gradient-Sprite**, pro
+  Objekt skaliert gezeichnet. Ersetzt Glow als Tiefen-Signal und kostet nichts.
+- **Doppelkontur-Text (weiß außen, braun innen) via 2× strokeText + fillText**
+  macht Canvas-Popups auf JEDEM Untergrund lesbar — Neon brauchte dafür Glow.
+- Ein-Frame-Sprites brauchen Bewegungs-Ersatz für 2-Frame-Animationen:
+  Wespen-Flug-Bob (rotate+scaleY-Sinus) und Chili-Zittern (schnelle
+  rotate-Sinus) telegraphieren genauso gut wie V1s Frame-Flip/Glow-Puls.
+
+## Kultur-/Kontext-Hygiene
+
+- **Meta-Tags beim Fork mitprüfen:** V1s `<meta description>` enthielt noch
+  „Bomben" — die Don't-Liste (Chili statt Bombe) gilt auch für unsichtbare
+  Texte (Suchtreffer!). Don't-Review auf ALLE Textquellen ausweiten.
+
+## Deploy (Studio-Muster, bestätigt)
+
+- `vercel domains add <domain> --scope <team>` (Ein-Argument-Form) + explizites
+  `vercel alias set <deploy-url> <domain>` + inhaltlicher Live-Check
+  (theme-color/#FFF6E8 gegrept, nicht nur HTTP 200) — lief exakt wie in den
+  V1-/MIXR-Lessons beschrieben.
+- ⚠️ **TODO vor dem echten Event:** Upstash-Marketplace-Integration ans
+  Vercel-Projekt `topping-rush-v2` hängen (liefert `KV_REST_API_URL`/`_TOKEN`)
+  und redeployen — bis dahin `mode:"memory"` (Cold Start leert das Board).
 
 ## Kosten (Ist)
+
 | Posten | Menge | Ist |
 |---|---|---|
-| Suno-Loop v1 (Synthwave) | 1 Call | 0,10 € |
-| Suno-Loop v1.1 (Arcade + Darbuka) | 1 Call | 0,10 € |
-| SFX (WebAudio-Synth) | 16 Stück | 0,00 € |
-| Sprites (code-gezeichnet) | 12 Objekte | 0,00 € |
-| **Gesamt** | | **0,20 €** (Budget 10 €, Schätzung ≤ 0,20 €) |
+| NB2-Sprites (Anker 1 + i2i-Serie 12, 0 Retries) | 13 Renders | 0,65 € |
+| Audio (SFX + Suno-Loop aus V1) | — | 0,00 € |
+| **Gesamt** | | **0,65 €** (Schätzung 0,85–1,20 €, Cap 10 €) |
