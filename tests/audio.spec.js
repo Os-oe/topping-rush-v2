@@ -25,7 +25,7 @@ test('Audio: Init nach Geste, SFX-Events sauber, Musik-Loop geladen', async ({ p
       g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
       g.update(1 / 60);
     }
-    g.spawnItem('chili', { x: g.cup.x, y: g.cupY - 5 });
+    g.spawnItem('bomb', { x: g.cup.x, y: g.cupY - 5 });
     g.update(1 / 60);
     g.spawnItem('wasp', { x: g.cup.x, y: g.cupY - 5 });
     g.items[g.items.length - 1].baseX = g.cup.x;
@@ -33,7 +33,7 @@ test('Audio: Init nach Geste, SFX-Events sauber, Musik-Loop geladen', async ({ p
     g.spawnItem('powerup', { x: g.cup.x, y: g.cupY - 5, variant: 'magnet' });
     g.update(1 / 60);
     // Bad-Item spawnen und durchfallen lassen → despawn-Cleanup
-    g.spawnItem('chili', { x: 30, y: g.H - 10 });
+    g.spawnItem('bomb', { x: 30, y: g.H - 10 });
     for (let i = 0; i < 40; i++) g.update(1 / 60);
     // Frenzy + letzte Sekunden + Ende
     g.t = g.duration - 4;

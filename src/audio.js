@@ -145,8 +145,8 @@ class AudioSys {
     for (const id of [...this.continuous.keys()]) this.stopContinuous(id);
   }
 
-  chiliSizzle(id) {
-    // „Sizzle"-Zischen ab Spawn (Nachtrag v1.1 — statt Bomben-Pfeifen)
+  bombFuse(id) {
+    // Zisch-Lunte ab Spawn (Nachtrag v2.1 — Audio-Telegraphing der Bombe)
     this.startContinuous(id, () => {
       const len = Math.ceil(this.ctx.sampleRate * 1.2);
       const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
@@ -221,10 +221,11 @@ class AudioSys {
       case 'comboJingle':
         this.arpeggio([659.25, 830.61, 987.77, 1318.5], { step: 0.055, vol: 0.14 });
         break;
-      case 'burn':
-        // chili-burn: Zisch-Noise + Pitch-Riser (Nachtrag v1.1 — statt Explosion)
-        this.noise({ dur: 0.45, vol: 0.4, f0: 3200, f1: 7500, q: 0.9, type: 'bandpass' });
-        this.tone({ type: 'sawtooth', f0: 160, f1: 950, dur: 0.4, vol: 0.28 });
+      case 'poff':
+        // comic „Poff!"-Boom (Nachtrag v2.1): dumpf, kurz, freundlich —
+        // kein realistischer Explosions-Sound
+        this.tone({ type: 'sine', f0: 170, f1: 52, dur: 0.2, vol: 0.5, attack: 0.004 });
+        this.noise({ dur: 0.13, vol: 0.3, f0: 420, f1: 170, q: 0.7, type: 'lowpass' });
         break;
       case 'sting':
         this.tone({ type: 'square', f0: 880, f1: 180, dur: 0.16, vol: 0.22 });
@@ -287,8 +288,8 @@ class AudioSys {
       case 'comboMilestone':
         this.play('comboJingle');
         break;
-      case 'chiliSpawn':
-        this.chiliSizzle(data.id);
+      case 'bombSpawn':
+        this.bombFuse(data.id);
         break;
       case 'waspSpawn':
         this.waspBuzz(data.id);
@@ -296,9 +297,9 @@ class AudioSys {
       case 'powerupSpawn':
         this.shimmer(data.id);
         break;
-      case 'chili':
+      case 'bomb':
         this.stopContinuous(data.item.id);
-        this.play('burn');
+        this.play('poff');
         break;
       case 'wasp':
         this.stopContinuous(data.item.id);

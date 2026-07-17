@@ -131,8 +131,44 @@ body {
 .linklike { background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer; font-size: 0.75rem; font-family: 'Nunito', sans-serif; font-weight: 600; }
 .osai-mark { height: 13px; vertical-align: -2px; }
 
-/* ---------- Countdown ---------- */
-#screen-countdown { flex-direction: column; gap: 26px; }
+/* ---------- Countdown: Legende-Karte + 5-s-Ring (Nachtrag v2.1) ---------- */
+#screen-countdown { flex-direction: column; gap: 20px; padding: 0 14px; }
+.legend-card {
+  width: min(94vw, 400px);
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 24px;
+  box-shadow: 0 4px 0 var(--ink);
+  padding: 16px 12px 18px;
+  display: flex; flex-direction: column; align-items: center; gap: 13px;
+}
+.legend-title { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 0.8rem; letter-spacing: 0.24em; color: var(--teal-dark); }
+.legend-row { display: flex; flex-direction: column; align-items: center; gap: 5px; width: 100%; }
+.legend-icons { display: flex; align-items: center; justify-content: center; gap: 5px; }
+.legend-spr { width: 33px; height: 33px; object-fit: contain; display: block; }
+.legend-spr-bad { width: 37px; height: 37px; }
+.legend-text { font-size: 0.92rem; font-weight: 700; color: var(--ink); line-height: 1.4; text-align: center; padding: 0 4px; }
+/* Warn-Ring in der Legende = dieselbe Signatur wie im Spiel (2–3 px #E63946, ~1,5 Hz) */
+.warn-wrap { position: relative; width: 47px; height: 47px; display: flex; align-items: center; justify-content: center; }
+.warn-wrap::before {
+  content: ''; position: absolute; inset: 0; border-radius: 50%;
+  border: 2.5px solid #E63946;
+  animation: warnPulse 0.33s ease-in-out infinite alternate;
+}
+@keyframes warnPulse { from { opacity: 0.5; transform: scale(0.95); } to { opacity: 0.9; transform: scale(1.04); } }
+.start-ring-wrap { position: relative; width: 116px; height: 116px; margin-top: 2px; }
+.start-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring-bg { fill: none; stroke: rgba(74,46,31,0.16); stroke-width: 9; }
+.ring-fg { fill: none; stroke: var(--teal); stroke-width: 9; stroke-linecap: round; }
+.btn-start {
+  position: absolute; inset: 13px; border-radius: 50%;
+  background: var(--coral); color: #FFFFFF;
+  border: 3px solid var(--ink); box-shadow: 0 3px 0 var(--ink);
+  font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1.1rem; letter-spacing: 0.04em;
+  text-shadow: 0 1.5px 0 rgba(74,46,31,0.4);
+  cursor: pointer; transition: transform 0.06s ease, box-shadow 0.06s ease;
+}
+.btn-start:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
 .count-num {
   font-family: 'Baloo 2', sans-serif; font-weight: 800;
   font-size: clamp(6rem, 34vw, 9rem); line-height: 1;
@@ -142,8 +178,8 @@ body {
 .count-num.pop { animation: countPop 0.32s ease-out; }
 .count-num.go { color: var(--teal-dark); }
 @keyframes countPop { 0% { transform: scale(1.45); } 100% { transform: scale(1); } }
-.count-hint { font-size: 1.02rem; font-weight: 700; color: var(--ink); padding: 0 26px; text-align: center; line-height: 1.6; }
 .c-lime { color: var(--lime); } .c-orange { color: var(--orange); } .c-yellow { color: #B07800; }
+.c-red { color: var(--red); } .c-teal { color: var(--teal-dark); }
 
 /* ---------- Game ---------- */
 #screen-game { display: block; background: linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%); }

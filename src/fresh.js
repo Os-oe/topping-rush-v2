@@ -29,7 +29,7 @@ export class FreshSkin {
     this.popups = []; // {text,x,y,color,age,ttl,size,vx,vy,rot,rotV}
     this.shakeMag = 0;
     this.shakeT = 0;
-    this.edgeFlash = null; // Chili: oranger RAND-Flash {age, ttl} — nie Fullscreen
+    this.edgeFlash = null; // Bombe: oranger RAND-Flash {age, ttl} — nie Fullscreen
     this.centerText = null; // {text, age, ttl, color, size, confetti}
     this.queue = []; // Timing-Kaskade: {at, fn}
     this.catchSquash = 1; // Becher: 130 % breit / 70 % hoch → zurück (ease-out-back)
@@ -43,6 +43,7 @@ export class FreshSkin {
     this.edgeSprite = null; // vorgerenderter oranger Rand-Verlauf
     this.bgSize = '';
     this._tintCache = new Map();
+    this._redCache = new Map();
   }
 
   // ---------- Helle Bühne: 3-Stop-Verlauf + Rand-Blobs + Iznik-Layer ----------
@@ -116,7 +117,7 @@ export class FreshSkin {
     // Frenzy: gleiche Helligkeit, wärmer gesättigt — Lesbarkeitsregeln gelten weiter
     this.bgFrenzy = make(['#FFF1D6', '#FFD9A6', '#FFC2B0'], 1.3);
 
-    // Rand-Flash-Sprite (Chili): oranger Verlauf von allen 4 Kanten nach innen
+    // Rand-Flash-Sprite (Bombe): oranger Verlauf von allen 4 Kanten nach innen
     const e = document.createElement('canvas');
     e.width = game.W;
     e.height = game.H;
@@ -186,9 +187,26 @@ export class FreshSkin {
   spriteFor(it) {
     const S = this.sprites;
     if (it.type === 'topping') return S.toppings[it.variant] || S.toppings.nar;
-    if (it.type === 'chili') return S.chili;
+    if (it.type === 'bomb') return S.bomb;
     if (it.type === 'wasp') return S.wasp;
     return S.capsules[it.variant] || S.capsules.magnet;
+  }
+
+  // Rote Silhouette eines Sprites (Nachtrag v2.1: konturierte Tint-Kante am
+  // Sprite-Rand für Bad-Items — KEIN Blur-Glow). Cache erst ab PNG-ready.
+  redSilhouette(entry) {
+    let t = this._redCache.get(entry.cv);
+    if (t) return t;
+    const cv = document.createElement('canvas');
+    cv.width = entry.cv.width;
+    cv.height = entry.cv.height;
+    const x = cv.getContext('2d');
+    x.drawImage(entry.cv, 0, 0);
+    x.globalCompositeOperation = 'source-in';
+    x.fillStyle = C.warnRed;
+    x.fillRect(0, 0, cv.width, cv.height);
+    if (entry.ready) this._redCache.set(entry.cv, cv); // Fallback-Blob nie einfrieren
+    return cv;
   }
 
   // Juice-Events (aus main.js) — jede Aktion ≥ 3 Feedback-Kanäle
@@ -207,13 +225,14 @@ export class FreshSkin {
       navigator.vibrate?.(6);
     } else if (type === 'comboMilestone') {
       this.centerText = { text: `COMBO ×${data.streak}`, age: 0, ttl: 0.9, color: C.magenta, size: 44 };
-      this.shake(2.5, 0.15); // Shake NUR Combo-Meilenstein/Chili (dezenter als V1)
-    } else if (type === 'chili') {
+      this.shake(2.5, 0.15); // Shake NUR Combo-Meilenstein/Bombe (dezenter als V1)
+    } else if (type === 'bomb') {
       const it = data.item;
-      // Hitze: oranger RAND-Flash statt Fullscreen (+20 ms)
+      // Wumms (v2.1): oranger RAND-Flash (+20 ms), Rauch-Pöff (+50 ms),
+      // rotes „−30"-Popup mit dicker Kontur (+100 ms) — kein Fullscreen-Rot
       this.schedule(20, () => (this.edgeFlash = { age: 0, ttl: 0.35 }));
-      this.schedule(50, () => this.particles.spawn(14, it.x, it.y, 'orange', { speedMin: 240, speedMax: 420, size: 10 }));
-      this.schedule(100, () => this.addPopup('ZU SCHARF!', it.x, it.y - 10, C.orange, 27));
+      this.schedule(50, () => this.particles.spawn(12, it.x, it.y, 'smoke', { speedMin: 50, speedMax: 150, up: 120, gravity: -140, size: 12 }));
+      this.schedule(100, () => this.addPopup('−30', it.x, it.y - 12, C.blinkRed, 30));
       this.shake(4, 0.25);
       this.wobble = { age: 0, dur: 0.3, amp: (8 * Math.PI) / 180 };
       navigator.vibrate?.([30, 40, 60]);
@@ -225,7 +244,7 @@ export class FreshSkin {
         this.schedule(100, () => this.addPopup('AUTSCH', it.x, it.y - 10, C.yellow));
       }
       this.schedule(50, () => this.particles.spawn(8, it.x, it.y, 'yellow', { size: 8 }));
-      navigator.vibrate?.(20); // kein Shake (V2: nur Meilenstein/Chili)
+      navigator.vibrate?.(20); // kein Shake (V2: nur Meilenstein/Bombe)
     } else if (type === 'powerup') {
       const it = data.item;
       const label = { magnet: 'MAGNET', xxl: 'XXL', slowmo: 'ZEITLUPE' }[data.kind];
@@ -339,12 +358,13 @@ export class FreshSkin {
       const x = it.x | 0;
       const y = it.y | 0;
       const e = this.spriteFor(it);
+      const isBad = it.type === 'bomb' || it.type === 'wasp';
       ctx.save();
       ctx.translate(x, y);
       if (it.type === 'topping') {
         ctx.rotate(Math.sin(it.rot) * 0.35);
         ctx.scale(0.95, 1.05); // Fall-Stretch
-      } else if (it.type === 'chili') {
+      } else if (it.type === 'bomb') {
         // Gefahr-Telegraphing ohne Glow: schnelles Zittern + Puls
         ctx.rotate(Math.sin(it.rot) * 0.2 + Math.sin(game.t * 18) * 0.06);
         const p = 1 + Math.sin(game.t * 10) * 0.05;
@@ -358,8 +378,27 @@ export class FreshSkin {
         const pulse = 1 + Math.sin(game.t * 6) * 0.08;
         ctx.scale(pulse, pulse);
       }
+      if (isBad) {
+        // v2.1: dezente rote Tint-Kante — rote Silhouette knapp größer HINTER
+        // dem Sprite (konturierte Doppellinie, kein Blur-Glow)
+        const sil = this.redSilhouette(e);
+        const k = 1.07;
+        ctx.drawImage(sil, (-e.w / 2) * k, (-e.h / 2) * k, e.w * k, e.h * k);
+      }
       ctx.drawImage(e.cv, -e.w / 2, -e.h / 2, e.w, e.h);
       ctx.restore();
+      if (isBad) {
+        // v2.1: pulsierender roter Warn-Ring ab Spawn bis Boden
+        // (2–3 px Kontur #E63946, ~1,5 Hz, Opacity 0,5–0,9) — weltfest, unrotiert
+        const pulse = 0.7 + 0.2 * Math.sin(2 * Math.PI * 1.5 * (game.t - it.born));
+        ctx.strokeStyle = C.warnRed;
+        ctx.globalAlpha = pulse;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(x, y, Math.max(e.w, e.h) / 2 + 6, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.globalAlpha = 1;
+      }
     }
 
     // ---------- Objekt-Weißblitz (≤ 60 ms, 70 % Tint — nie Fullscreen) ----------
@@ -381,8 +420,7 @@ export class FreshSkin {
 
     // ---------- Becher: Squash & Stretch + Wobble ----------
     const wQ = Math.round(this.dispW / 4) * 4; // 4-px-Quantisierung: begrenzt den Sprite-Cache
-    const hot = game.t < cup.shrinkUntil; // Chili: Becher glüht 3 s warm
-    const { cv, pad } = S.cup(wQ, hot);
+    const { cv, pad } = S.cup(wQ);
     // Fang: 130 % breit / 70 % hoch → zurück in ~150 ms (ease-out-back)
     this.catchSquash = Math.min(1, this.catchSquash + dt / 0.15);
     const e = easeOutBack(this.catchSquash);
@@ -525,7 +563,7 @@ export class FreshSkin {
     }
     fx.restore(); // Shake (Overlay)
 
-    // ---------- Chili: oranger RAND-Flash (nie Fullscreen) ----------
+    // ---------- Bombe: oranger RAND-FLASH (nie Fullscreen) ----------
     if (this.edgeFlash) {
       this.edgeFlash.age += dt;
       if (this.edgeFlash.age >= this.edgeFlash.ttl) this.edgeFlash = null;

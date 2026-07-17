@@ -30,7 +30,25 @@ test('Live: Runde spielen → Score auf Server → /board zeigt Eintrag', async 
   await page.goto('/?seed=42');
   await page.locator('#name-input').fill(NAME);
   await page.locator('#btn-play').tap();
+  // v2.1: Legende erscheint (inhaltlicher Live-Check), Tap-Skip startet sofort
+  await expect(page.locator('#legend-card')).toBeVisible();
+  await expect(page.locator('#legend-card')).toContainText('Bombe −30');
+  await page.locator('#btn-start-round').tap();
   await expect(page.locator('#screen-game')).toBeVisible({ timeout: 8000 });
+
+  // v2.1: Bombe fällt live — Sprite geladen, −30-Mechanik + Combo-Reset greifen
+  const bomb = await page.evaluate(() => {
+    const g = window.__TR.game;
+    g.stop();
+    g.score = 50;
+    g.streak = 3;
+    g.spawnItem('bomb', { x: g.cup.x, y: g.cupY - 5 });
+    g.update(1 / 60);
+    return { score: g.score, streak: g.streak, ready: !!g.skin?.sprites?.bomb?.ready };
+  });
+  expect(bomb.score).toBe(20);
+  expect(bomb.streak).toBe(0);
+  expect(bomb.ready).toBe(true);
 
   // Runde deterministisch verkürzen: ein paar echte Catches, dann Zeit ablaufen lassen
   await page.evaluate(() => {

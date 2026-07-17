@@ -44,13 +44,13 @@ await page.screenshot({ path: `${OUT}/03-game-early.png` });
 await page.evaluate(() => {
   const g = window.__TR.game;
   g.spawnItem('powerup', { x: g.cup.x, y: g.cupY - 8, variant: 'magnet' });
-  g.spawnItem('chili', { x: 80, y: g.H * 0.4 });
+  g.spawnItem('bomb', { x: 80, y: g.H * 0.4 });
   g.spawnItem('wasp', { x: g.W - 90, y: g.H * 0.3 });
   return 1;
 });
 await page.waitForTimeout(700);
 await page.screenshot({ path: `${OUT}/04-game-powerup.png` });
-// Zutaten-Lineup: alle 8 + Chili + Wespe eingefroren (Gate: Erkennbarkeit in Fallgröße)
+// Zutaten-Lineup: alle 8 + Bombe + Wespe eingefroren (Gate: Erkennbarkeit in Fallgröße)
 await page.evaluate(() => {
   const g = window.__TR.game;
   g.stop();
@@ -63,7 +63,7 @@ await page.evaluate(() => {
     it.rot = 0;
     it.rotV = 0;
   });
-  g.spawnItem('chili', { x: 116, y: 500 });
+  g.spawnItem('bomb', { x: 116, y: 500 });
   const w = g.spawnItem('wasp', { x: 300, y: 500 });
   w.baseX = 300;
   g.update(0);

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
   <meta name="theme-color" content="#FFF6E8" />
   <title>TOPPING RUSH — 60 Sekunden. Fang alles.</title>
-  <meta name="description" content="Event-Arcade: 60 Sekunden Früchte fangen, Chili und Wespe ausweichen. Bester Versuch zählt — ab aufs Leaderboard!" />
+  <meta name="description" content="Event-Arcade: 60 Sekunden Früchte fangen, Bombe und Wespe ausweichen. Bester Versuch zählt — ab aufs Leaderboard!" />
   <link rel="stylesheet" href="/fonts/fonts.css" />
   <link rel="stylesheet" href="/src/styles.css" />
 </head>
@@ -36,10 +36,38 @@
       </div>
     </section>
 
-    <!-- COUNTDOWN -->
+    <!-- COUNTDOWN: Legende-Karte + 5-s-Ring (Nachtrag v2.1, ersetzt 3-2-1) -->
     <section id="screen-countdown" class="screen" hidden>
-      <div id="count-num" class="count-num">3</div>
-      <p id="count-hint" class="count-hint"></p>
+      <div id="legend-card" class="legend-card">
+        <p class="legend-title">SO GEHT&rsquo;S</p>
+        <div class="legend-row">
+          <div class="legend-icons">
+            <img class="legend-spr" src="/sprites/nar.png" alt="" /><img class="legend-spr" src="/sprites/limon.png" alt="" /><img class="legend-spr" src="/sprites/karpuz.png" alt="" /><img class="legend-spr" src="/sprites/nane.png" alt="" /><img class="legend-spr" src="/sprites/visne.png" alt="" /><img class="legend-spr" src="/sprites/portakal.png" alt="" /><img class="legend-spr" src="/sprites/cilek.png" alt="" /><img class="legend-spr" src="/sprites/cay.png" alt="" />
+          </div>
+          <p class="legend-text"><b class="c-lime">+10</b> — fang alles!</p>
+        </div>
+        <div class="legend-row">
+          <div class="legend-icons">
+            <span class="warn-wrap"><img class="legend-spr legend-spr-bad" src="/sprites/bomb.png" alt="Bombe" /></span>
+            <span class="warn-wrap"><img class="legend-spr legend-spr-bad" src="/sprites/wasp.png" alt="Wespe" /></span>
+          </div>
+          <p class="legend-text"><b class="c-red">Bombe &minus;30</b> &middot; <b class="c-yellow">Wespe</b> klaut deine Combo — ausweichen!</p>
+        </div>
+        <div class="legend-row">
+          <div class="legend-icons">
+            <img class="legend-spr" src="/sprites/pu-magnet.png" alt="" /><img class="legend-spr" src="/sprites/pu-xxl.png" alt="" /><img class="legend-spr" src="/sprites/pu-slowmo.png" alt="" />
+          </div>
+          <p class="legend-text"><b class="c-teal">Einsammeln lohnt sich!</b></p>
+        </div>
+        <div class="start-ring-wrap">
+          <svg class="start-ring" viewBox="0 0 120 120" aria-hidden="true">
+            <circle class="ring-bg" cx="60" cy="60" r="54" />
+            <circle id="ring-fg" class="ring-fg" cx="60" cy="60" r="54" />
+          </svg>
+          <button id="btn-start-round" class="btn-start">START</button>
+        </div>
+      </div>
+      <div id="count-num" class="count-num" hidden>LOS!</div>
     </section>
 
     <!-- GAME -->

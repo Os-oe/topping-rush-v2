@@ -66,35 +66,61 @@ function startFlow() {
   startCountdown();
 }
 
-// ---------- Countdown ----------
-let countTimer = 0;
+// ---------- Countdown: Legende-Karte + 5-s-Ring (Nachtrag v2.1) ----------
+// Erst-Spieler bekommen ~5 s Lesezeit, Wiederholer tippen START und verlieren
+// keine Sekunde. Danach kurzes „LOS!" statt der alten 3-2-1-Sequenz.
+const LEGEND_SECS = 5;
+const RING_CIRC = 2 * Math.PI * 54; // r=54 im 120er-viewBox
+let legendRaf = 0;
+let legendDone = true;
+
 function startCountdown() {
   show('countdown');
-  $('count-hint').innerHTML =
-    'Fang die <b class="c-lime">Früchte</b> — weich <b class="c-orange">Chili</b> &amp; <b class="c-yellow">Wespe</b> aus!';
-  let n = 3;
-  const el = $('count-num');
-  el.textContent = n;
-  el.classList.remove('go');
-  window.__audio?.play('countTick');
-  clearInterval(countTimer);
-  countTimer = setInterval(() => {
-    n--;
-    if (n > 0) {
-      el.textContent = n;
-      el.classList.remove('pop');
-      void el.offsetWidth;
-      el.classList.add('pop');
+  const card = $('legend-card');
+  const num = $('count-num');
+  card.hidden = false;
+  num.hidden = true;
+  num.classList.remove('go');
+  const ring = $('ring-fg');
+  ring.style.strokeDasharray = String(RING_CIRC);
+  ring.style.strokeDashoffset = '0';
+  legendDone = false;
+  let lastWhole = LEGEND_SECS;
+  const t0 = performance.now();
+  cancelAnimationFrame(legendRaf);
+  const tick = (now) => {
+    if (legendDone) return;
+    const p = Math.min((now - t0) / 1000 / LEGEND_SECS, 1);
+    ring.style.strokeDashoffset = String(RING_CIRC * p);
+    const left = Math.ceil(LEGEND_SECS * (1 - p));
+    if (left < lastWhole && left > 0) {
+      lastWhole = left;
       window.__audio?.play('countTick');
-    } else {
-      clearInterval(countTimer);
-      el.textContent = 'GO!';
-      el.classList.add('go');
-      window.__audio?.play('countGo');
-      setTimeout(startGame, 350);
     }
-  }, 750);
+    if (p >= 1) finishLegend();
+    else legendRaf = requestAnimationFrame(tick);
+  };
+  legendRaf = requestAnimationFrame(tick);
 }
+
+function finishLegend() {
+  if (legendDone) return; // Doppel-Tap / Race Ring-Ende vs. Tap
+  legendDone = true;
+  cancelAnimationFrame(legendRaf);
+  $('legend-card').hidden = true;
+  const num = $('count-num');
+  num.textContent = 'LOS!';
+  num.hidden = false;
+  num.classList.add('go');
+  window.__audio?.play('countGo');
+  setTimeout(startGame, 380);
+}
+
+$('btn-start-round').addEventListener('click', () => {
+  window.__audio?.ensureStarted();
+  window.__audio?.play('uiTap');
+  finishLegend(); // Tap = sofort starten
+});
 
 // ---------- Spiel ----------
 function startGame() {

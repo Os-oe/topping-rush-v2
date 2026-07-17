@@ -46,8 +46,9 @@ function spriteEntry(wLogical, hLogical, url, fallbackColor) {
 }
 
 // ---------- Becher V2 „Fresh" (prozedural — MIXR-Lesson: Gefäße nie als KI-Layer)
-// Cremeweiß, braune Kontur, Pseudo-3D-Bodenkante; hot = Chili-Glühen (warm getönt).
-function drawCup(w, hot) {
+// Cremeweiß, braune Kontur, Pseudo-3D-Bodenkante.
+// (v2.1: Hot-Zustand entfernt — Chili-Glühen gibt es mit der Bombe nicht mehr.)
+function drawCup(w) {
   const pad = 26;
   const h = CFG.cupH;
   const [cv, x] = offscreen(w + pad * 2, h + pad * 2);
@@ -56,10 +57,10 @@ function drawCup(w, hot) {
   const lipR = pad + w;
   const taper = Math.min(10, w * 0.12);
   const edge = 7; // Pseudo-3D-Bodenkante
-  const body = hot ? '#FFE3CD' : '#FFFDF6';
-  const bodyDark = hot ? '#F5C6A0' : '#F3E4CC'; // Kante = dunklere Bodenfläche
-  const outline = hot ? '#8C2F1B' : C.outline;
-  const accent = hot ? C.orange : C.teal;
+  const body = '#FFFDF6';
+  const bodyDark = '#F3E4CC'; // Kante = dunklere Bodenfläche
+  const outline = C.outline;
+  const accent = C.teal;
 
   // Körper (Trapez, unten leicht schmaler)
   x.fillStyle = body;
@@ -164,7 +165,7 @@ function drawShadow() {
 let SPRITES = null;
 export function buildSprites() {
   const cupCache = new Map();
-  // Display-Grid: Toppings 68 px, Çay 72, Chili 72, Wespe 76, Kapseln 74 (logisch)
+  // Display-Grid: Toppings 68 px, Çay 72, Bombe 72, Wespe 76, Kapseln 74 (logisch)
   SPRITES = {
     toppings: {
       nar: spriteEntry(68, 68, '/sprites/nar.png', '#C0392B'),
@@ -176,7 +177,7 @@ export function buildSprites() {
       cilek: spriteEntry(68, 68, '/sprites/cilek.png', '#E63946'),
       cay: spriteEntry(72, 72, '/sprites/cay.png', '#C87B2E'),
     },
-    chili: spriteEntry(72, 72, '/sprites/chili.png', '#D7263D'),
+    bomb: spriteEntry(72, 72, '/sprites/bomb.png', '#2E3440'),
     wasp: spriteEntry(76, 76, '/sprites/wasp.png', '#F5C518'),
     capsules: {
       magnet: spriteEntry(74, 74, '/sprites/pu-magnet.png', '#F5A623'),
@@ -194,11 +195,12 @@ export function buildSprites() {
       red: drawDot('#E63946'),
       amber: drawDot('#E8A33D'),
       white: drawDot('#FFFFFF'),
+      smoke: drawDot('#A9A19A'), // Bomben-Rauch-Pöff (warmes Grau, konturiert)
     },
     shadow: drawShadow(),
-    cup(w, hot = false) {
-      const key = `${Math.round(w)}|${hot ? 1 : 0}`;
-      if (!cupCache.has(key)) cupCache.set(key, drawCup(Math.round(w), hot));
+    cup(w) {
+      const key = `${Math.round(w)}`;
+      if (!cupCache.has(key)) cupCache.set(key, drawCup(Math.round(w)));
       return cupCache.get(key);
     },
   };

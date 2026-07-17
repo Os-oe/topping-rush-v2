@@ -23,7 +23,7 @@ async function runBot(page, profile) {
       const good = g.items.filter(
         (i) => (i.type === 'topping' || i.type === 'powerup') && i.y < g.cupY - 10
       );
-      const bads = g.items.filter((i) => i.type === 'chili' || i.type === 'wasp');
+      const bads = g.items.filter((i) => i.type === 'bomb' || i.type === 'wasp');
       // Menschlicher Fehlgriff: Bad-Item wird im Eifer als Ziel „mitgenommen"
       // (Konzept erwartet Wespen-Verluste — Combo-Brüche gehören zum Profil)
       for (const b of bads) {

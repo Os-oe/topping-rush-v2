@@ -91,7 +91,6 @@ export class Game {
       target: this.W / 2,
       w: CFG.cupW,
       tween: null, // {from, t0, dur}
-      shrinkUntil: 0,
       xxlUntil: 0,
       magnetUntil: 0,
       slowmoUntil: 0,
@@ -149,7 +148,7 @@ export class Game {
 
     const wantBad = canBad && this.rng() < 0.25;
     if (wantBad) {
-      const type = this.rng() < 0.5 ? 'chili' : 'wasp';
+      const type = this.rng() < 0.5 ? 'bomb' : 'wasp';
       this.spawnItem(type, { x: this.pickBadX() });
     } else {
       const variant = TOPPINGS[(this.rng() * TOPPINGS.length) | 0];
@@ -197,15 +196,15 @@ export class Game {
       born: this.t,
       rot: this.rng() * Math.PI * 2,
       rotV: (this.rng() - 0.5) * 2.2, // leichte Rotation
-      r: type === 'wasp' ? 20 : type === 'chili' ? 20 : type === 'powerup' ? 22 : 17,
+      r: type === 'wasp' ? 20 : type === 'bomb' ? 20 : type === 'powerup' ? 22 : 17,
       dead: false,
     };
     this.items.push(item);
     this.spawnedTotal++;
-    if (type === 'chili' || type === 'wasp') {
+    if (type === 'bomb' || type === 'wasp') {
       this.spawnedBad++;
       this.lastBadT = this.t;
-      this.onEvent(type === 'chili' ? 'chiliSpawn' : 'waspSpawn', item);
+      this.onEvent(type === 'bomb' ? 'bombSpawn' : 'waspSpawn', item);
     } else if (type === 'topping') {
       this.lastGood = { t: this.t, x: item.x };
       this.recentGoods.push({ t: this.t, x: item.x });
@@ -257,11 +256,10 @@ export class Game {
     }
     cup.x = Math.max(20, Math.min(this.W - 20, cup.x));
 
-    // Effekt-Timer
+    // Effekt-Timer (v2.1: kein Becher-Schrumpf mehr — Bombe kostet Punkte)
     const now = this.t;
-    const shrunk = now < cup.shrinkUntil;
     const xxl = now < cup.xxlUntil;
-    cup.w = CFG.cupW * (xxl ? CFG.xxlScale : 1) * (shrunk ? CFG.chiliShrink : 1);
+    cup.w = CFG.cupW * (xxl ? CFG.xxlScale : 1);
     const slowmo = now < cup.slowmoUntil;
     const magnet = now < cup.magnetUntil;
 
@@ -326,11 +324,8 @@ export class Game {
       if (secLeft <= 5 && secLeft > 0) this.onEvent('secondTick', { n: secLeft });
     }
 
-    // Becher-Breite nach Catches im selben Frame aktualisieren (Chili/XXL wirken sofort)
-    cup.w =
-      CFG.cupW *
-      (this.t < cup.xxlUntil ? CFG.xxlScale : 1) *
-      (this.t < cup.shrinkUntil ? CFG.chiliShrink : 1);
+    // Becher-Breite nach Catches im selben Frame aktualisieren (XXL wirkt sofort)
+    cup.w = CFG.cupW * (this.t < cup.xxlUntil ? CFG.xxlScale : 1);
 
     this.onEvent('tick', { dt });
   }
@@ -348,9 +343,12 @@ export class Game {
       if (this.streak > 0 && this.streak % 5 === 0) {
         this.onEvent('comboMilestone', { streak: this.streak });
       }
-    } else if (it.type === 'chili') {
-      cup.shrinkUntil = this.t + CFG.chiliShrinkDur; // refresht, stapelt nie
-      this.onEvent('chili', { item: it });
+    } else if (it.type === 'bomb') {
+      // Nachtrag v2.1: −30 Punkte (Score-Floor 0) + Combo → 0
+      this.score = Math.max(0, this.score - CFG.bombPenalty);
+      const lost = this.streak;
+      this.streak = 0;
+      this.onEvent('bomb', { item: it, lostStreak: lost });
     } else if (it.type === 'wasp') {
       const lost = this.streak;
       this.streak = 0;
@@ -416,9 +414,9 @@ export class Game {
         c.beginPath();
         c.arc(it.x, it.y, it.r, 0, Math.PI * 2);
         c.fill();
-      } else if (it.type === 'chili') {
-        c.fillStyle = '#c40f1f';
-        c.strokeStyle = CFG.colors.orange;
+      } else if (it.type === 'bomb') {
+        c.fillStyle = '#2E3440';
+        c.strokeStyle = CFG.colors.warnRed;
         c.lineWidth = 3;
         c.beginPath();
         c.arc(it.x, it.y, it.r, 0, Math.PI * 2);
@@ -445,7 +443,7 @@ export class Game {
 
     // Becher
     const cup = this.cup;
-    c.fillStyle = this.t < cup.shrinkUntil ? CFG.colors.orange : CFG.colors.cyan;
+    c.fillStyle = CFG.colors.cyan;
     c.fillRect(cup.x - cup.w / 2, this.cupY, cup.w, CFG.cupH);
     if (this.t < cup.magnetUntil) {
       c.strokeStyle = CFG.colors.magenta;

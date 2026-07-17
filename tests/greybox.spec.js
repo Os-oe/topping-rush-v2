@@ -3,7 +3,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Greybox — Kernloop', () => {
-  test('Start-Flow: Name → PLAY → Countdown → Spiel', async ({ page }) => {
+  test('Start-Flow: Name → PLAY → Legende → START-Tap = sofort → Spiel', async ({ page }) => {
     await page.goto('/?seed=42');
     // PLAY ohne Name → bleibt auf Start
     await page.locator('#btn-play').tap();
@@ -13,9 +13,49 @@ test.describe('Greybox — Kernloop', () => {
     await expect(page.locator('#name-input')).toHaveValue('TesterÄ');
     await page.locator('#btn-play').tap();
     await expect(page.locator('#screen-countdown')).toBeVisible();
-    await expect(page.locator('#screen-game')).toBeVisible({ timeout: 6000 });
+    await expect(page.locator('#legend-card')).toBeVisible();
+    // Tap-Skip: Wiederholer verlieren keine Sekunde (v2.1)
+    await page.locator('#btn-start-round').tap();
+    await expect(page.locator('#screen-game')).toBeVisible({ timeout: 3000 });
     const running = await page.evaluate(() => window.__TR.game.running);
     expect(running).toBe(true);
+  });
+
+  test('Legende (v2.1): 3 Zeilen auf 390 px komplett lesbar, Auto-Start nach ~5 s mit LOS!', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 780 });
+    await page.goto('/?seed=42');
+    await page.locator('#name-input').fill('LegendeBot');
+    await page.locator('#btn-play').tap();
+    await expect(page.locator('#legend-card')).toBeVisible();
+    // Zeile 1: 8 Zutaten · Zeile 2: Bombe + Wespe mit Warn-Ring · Zeile 3: 3 Kapseln
+    await expect(page.locator('.legend-row').nth(0).locator('.legend-spr')).toHaveCount(8);
+    await expect(page.locator('.warn-wrap')).toHaveCount(2);
+    await expect(page.locator('.legend-row').nth(2).locator('.legend-spr')).toHaveCount(3);
+    await expect(page.locator('#legend-card')).toContainText('+10');
+    await expect(page.locator('#legend-card')).toContainText('Bombe −30');
+    await expect(page.locator('#legend-card')).toContainText('ausweichen');
+    await expect(page.locator('#legend-card')).toContainText('Einsammeln lohnt sich');
+    // Karte + START-Button komplett im 390-px-Viewport (nichts abgeschnitten)
+    const fits = await page.evaluate(() => {
+      const r = document.getElementById('legend-card').getBoundingClientRect();
+      const btn = document.getElementById('btn-start-round').getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right, vw: innerWidth, vh: innerHeight, btnW: btn.width };
+    });
+    expect(fits.top).toBeGreaterThanOrEqual(0);
+    expect(fits.bottom).toBeLessThanOrEqual(fits.vh + 0.5);
+    expect(fits.left).toBeGreaterThanOrEqual(0);
+    expect(fits.right).toBeLessThanOrEqual(fits.vw + 0.5);
+    expect(fits.btnW).toBeGreaterThan(70); // Daumen-tauglich
+    // Ohne Tap: Ring läuft ab → „LOS!" (nur ~380 ms sichtbar → rAF-Polling) → Spiel
+    await page.waitForFunction(
+      () => {
+        const num = document.getElementById('count-num');
+        return !num.hidden && num.textContent === 'LOS!';
+      },
+      null,
+      { timeout: 8000, polling: 'raf' }
+    );
+    await expect(page.locator('#screen-game')).toBeVisible({ timeout: 2000 });
   });
 
   test('Becher: absolute X-Touch, Tween statt Teleport, Lerp danach', async ({ page }) => {
@@ -111,30 +151,37 @@ test.describe('Greybox — Kernloop', () => {
     expect(r.streakAfterWasp).toBe(0);
   });
 
-  test('Chili: Becher 3 s auf 60 % Breite, Timer refresht', async ({ page }) => {
+  test('Bombe (v2.1): −30 Punkte mit Floor 0, Combo → 0, KEIN Becher-Schrumpf', async ({ page }) => {
     await page.goto('/?seed=42');
     await page.evaluate(() => window.__TR.newGame({ autoSpawn: false }));
     const r = await page.evaluate(() => {
       const g = window.__TR.game;
       g.stop();
-      const baseW = 88;
-      g.spawnItem('chili', { x: g.cup.x, y: g.cupY - 5 });
+      const catchTop = () => {
+        g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
+        g.update(1 / 60);
+      };
+      catchTop(); catchTop(); catchTop(); // 10 + 11 + 12 = 33, Streak 3
+      const before = { score: g.score, streak: g.streak, w: g.cup.w };
+      g.spawnItem('bomb', { x: g.cup.x, y: g.cupY - 5 });
       g.update(1 / 60);
-      const wShrunk = g.cup.w;
-      const until1 = g.cup.shrinkUntil;
-      // 1 s später zweite Chili → Timer refresht (stapelt nie)
-      for (let i = 0; i < 60; i++) g.update(1 / 60);
-      g.spawnItem('chili', { x: g.cup.x, y: g.cupY - 5 });
+      const afterBomb = { score: g.score, streak: g.streak, w: g.cup.w };
+      // zweite Bombe bei Score 3 → Floor 0, nie negativ
+      g.spawnItem('bomb', { x: g.cup.x, y: g.cupY - 5 });
       g.update(1 / 60);
-      const until2 = g.cup.shrinkUntil;
-      // 3 s ohne weitere Chili → wieder normal
-      for (let i = 0; i < 200; i++) g.update(1 / 60);
-      const wAfter = g.cup.w;
-      return { baseW, wShrunk, refreshDelta: until2 - until1, wAfter };
+      const floorScore = g.score;
+      // Combo resettet → nächster Catch wieder Basis +10
+      const preCatch = g.score;
+      catchTop();
+      return { before, afterBomb, floorScore, nextPts: g.score - preCatch };
     });
-    expect(r.wShrunk).toBeCloseTo(r.baseW * 0.6, 0);
-    expect(r.refreshDelta).toBeGreaterThan(0.8); // refresht, nicht gestapelt
-    expect(r.wAfter).toBeCloseTo(r.baseW, 0);
+    expect(r.before.score).toBe(33);
+    expect(r.before.streak).toBe(3);
+    expect(r.afterBomb.score).toBe(3); // 33 − 30
+    expect(r.afterBomb.streak).toBe(0); // Combo → 0
+    expect(r.afterBomb.w).toBeCloseTo(r.before.w, 0); // Becher-Schrumpf ENTFÄLLT
+    expect(r.floorScore).toBe(0); // Score-Floor 0
+    expect(r.nextPts).toBe(10); // Combo neu ab Basis
   });
 
   test('Spawn-Kurve + Fairness über volle 60-s-Simulation (Seed 7)', async ({ page }) => {
@@ -151,7 +198,7 @@ test.describe('Greybox — Kernloop', () => {
       const origSpawn = g.spawnItem.bind(g);
       g.spawnItem = (type, opts) => {
         const it = origSpawn(type, opts);
-        if (type === 'chili' || type === 'wasp') {
+        if (type === 'bomb' || type === 'wasp') {
           badTimes.push(g.t);
           if (firstBadT === null) firstBadT = g.t;
         }
@@ -263,23 +310,23 @@ test.describe('Greybox — Kernloop', () => {
       const y1 = it.y;
       g.update(0.1);
       const dyNorm = it.y - y1;
-      // Magnet: zieht Topping in Radius, Chili nicht
+      // Magnet: zieht Topping in Radius, Bombe nicht
       g.items.length = 0;
       g.spawnItem('powerup', { x: g.cup.x, y: g.cupY - 5, variant: 'magnet' });
       g.update(1 / 60);
       const top = g.spawnItem('topping', { x: g.cup.x + 100, y: g.cupY - 60, variant: 'nane' });
-      const chili = g.spawnItem('chili', { x: g.cup.x - 100, y: g.cupY - 60 });
+      const bomb = g.spawnItem('bomb', { x: g.cup.x - 100, y: g.cupY - 60 });
       const topDx0 = Math.abs(top.x - g.cup.x);
-      const chiliDx0 = Math.abs(chili.x - g.cup.x);
+      const bombDx0 = Math.abs(bomb.x - g.cup.x);
       g.update(0.05);
       const topPulled = topDx0 - Math.abs(top.x - g.cup.x);
-      const chiliPulled = chiliDx0 - Math.abs(chili.x - g.cup.x);
-      return { wXxl, dySlow, dyNorm, topPulled, chiliPulled, magnetActive: g.t < g.cup.magnetUntil };
+      const bombPulled = bombDx0 - Math.abs(bomb.x - g.cup.x);
+      return { wXxl, dySlow, dyNorm, topPulled, bombPulled, magnetActive: g.t < g.cup.magnetUntil };
     });
     expect(r.wXxl).toBeCloseTo(88 * 2, 0);
     expect(r.dyNorm / r.dySlow).toBeGreaterThan(1.7); // ~2× schneller ohne SlowMo
     expect(r.magnetActive).toBe(true);
     expect(r.topPulled).toBeGreaterThan(5); // Topping wird gezogen
-    expect(Math.abs(r.chiliPulled)).toBeLessThan(1); // Chili NIE
+    expect(Math.abs(r.bombPulled)).toBeLessThan(1); // Bombe NIE
   });
 });

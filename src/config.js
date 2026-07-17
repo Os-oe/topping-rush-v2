@@ -45,9 +45,8 @@ export const CFG = {
   hitboxScale: 1.18,       // Fang-Hitbox 15–20 % breiter als Sprite
   cupBottomOffset: 96,     // px vom unteren Rand
 
-  // Bad-Item-Effekte
-  chiliShrink: 0.6,         // Becher auf 60 % Breite
-  chiliShrinkDur: 3,        // s (Timer refresht, stapelt nie)
+  // Bad-Item-Effekte (Nachtrag v2.1: Bombe −30 statt Chili-Becher-Schrumpf)
+  bombPenalty: 30,         // Punktabzug beim Bomben-Fang (Score-Floor 0), Combo → 0
   waspAmp: 50,             // px Sinus-Amplitude
   waspHz: 1.0,             // Sinus-Frequenz
 
@@ -85,8 +84,9 @@ export const CFG = {
     ink: '#4A2E1F',      // Text auf hellem Grund
     // Feedback-Farben (sat, dunkel genug für hellen BG)
     lime: '#3FA34D',     // Fang/Positiv (Blattgrün statt Neon-Lime)
-    orange: '#F1641E',   // Chili-Warnung
-    blinkRed: '#D7263D', // Chili-Rot
+    orange: '#F1641E',   // Bomben-Rand-Flash
+    blinkRed: '#D7263D', // „−30"-Popup-Rot
+    warnRed: '#E63946',  // Bad-Item-Warn-Ring (Nachtrag v2.1)
     yellow: '#F5A623',   // Power-Ups (sattes Amber statt Neon-Gelb)
     magenta: '#D81E5B',  // Combo-Highlights (Beere statt Neon-Magenta)
     cyan: '#2EC4B6',     // Legacy-Key → zeigt auf Türkis (Becher-Akzente)

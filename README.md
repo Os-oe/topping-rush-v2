@@ -2,9 +2,9 @@
 
 Event-Arcade-Catch-Game im hellen, illustrierten Look — gebaut für Feste mit
 Getränkeverkauf (Kermes-Edition): Gast scannt den QR-Code am Bar-Monitor, tippt
-seinen Namen, 3-2-1 — **60 Sekunden Früchte fangen**, Chilischote und Wespe
-ausweichen, Power-Ups schnappen. Der beste Versuch pro Name steht auf dem
-TV-Leaderboard.
+seinen Namen, kurze Legende mit 5-s-Countdown — **60 Sekunden Früchte fangen**,
+Comic-Bombe (−30 Punkte) und Wespe ausweichen, Power-Ups schnappen. Der beste
+Versuch pro Name steht auf dem TV-Leaderboard.
 
 V2 ersetzt den Neon-Look der [V1](https://topping-rush.demo.osai.solutions)
 durch illustrierte KI-Frucht-Sprites im MIXR-Stil auf heller Pastell-Bühne —
@@ -17,13 +17,16 @@ Mechanik, API und Fairness-Regeln sind identisch (dieselbe Test-Suite beweist es
 
 - **13 KI-illustrierte Sprites** (Nano Banana 2, Magenta-Key-Pipeline): 8 Zutaten
   (Granatapfel, Zitrone, Wassermelone, Minze, Vişne, Orange, Erdbeere,
-  Çay-Tulpenglas) + Chili, Wespe, 3 Power-Up-Kapseln — Stil-Anker + i2i-Serie
+  Çay-Tulpenglas) + Comic-Bombe, Wespe, 3 Power-Up-Kapseln — Stil-Anker + i2i-Serie
 - **Heller „Fresh"-Look:** 3-Stop-Pastell-Verlauf, vorgerenderte Bodenschatten,
   kein additives Blending, kein Trail-Fade, kein Laufzeit-shadowBlur —
   59,9 fps Median auf Mobile-Viewport (Metal-GPU-Messung)
 - **Juice ohne Blur:** Squash & Stretch (130/70, ease-out-back), konturierte
   Splash-Tropfen, Baloo-2-Popups mit Doppelkontur, Becher-Wobble,
-  Chili-Rand-Flash, konfetti-buntes „ŞERBET-RUSH ×2!"-Banner
+  Bomben-Rand-Flash + Rauch-Pöff, konfetti-buntes „ŞERBET-RUSH ×2!"-Banner
+- **Bad-Item-Warn-Signatur (v2.1):** pulsierender roter Warn-Ring + rote
+  Tint-Kante an Bombe und Wespe — Negatives ist in < 200 ms erkennbar,
+  auch im Graustufen-Test
 - Combo-Scoring mit Frenzy-Finale, deterministische Power-Up-Slots
   (Magnet / XXL / Zeitlupe), faire Bad-Item-Regeln
 - Best-of-Leaderboard (Upstash Redis, `ZADD GT` — In-Memory-Fallback ohne ENV),
