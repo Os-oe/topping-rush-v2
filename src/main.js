@@ -66,12 +66,9 @@ function startFlow() {
   startCountdown();
 }
 
-// ---------- Countdown: Legende-Karte + 5-s-Ring (Nachtrag v2.1) ----------
-// Erst-Spieler bekommen ~5 s Lesezeit, Wiederholer tippen START und verlieren
-// keine Sekunde. Danach kurzes „LOS!" statt der alten 3-2-1-Sequenz.
-const LEGEND_SECS = 5;
-const RING_CIRC = 2 * Math.PI * 54; // r=54 im 120er-viewBox
-let legendRaf = 0;
+// ---------- Countdown: Legende-Karte mit Tap-Start (Nachtrag v2.3) ----------
+// Kein Auto-Start mehr: Die Karte bleibt stehen, bis der Spieler START tippt —
+// jeder liest so lange, wie er will. Danach kurzes „LOS!".
 let legendDone = true;
 
 function startCountdown() {
@@ -81,32 +78,12 @@ function startCountdown() {
   card.hidden = false;
   num.hidden = true;
   num.classList.remove('go');
-  const ring = $('ring-fg');
-  ring.style.strokeDasharray = String(RING_CIRC);
-  ring.style.strokeDashoffset = '0';
   legendDone = false;
-  let lastWhole = LEGEND_SECS;
-  const t0 = performance.now();
-  cancelAnimationFrame(legendRaf);
-  const tick = (now) => {
-    if (legendDone) return;
-    const p = Math.min((now - t0) / 1000 / LEGEND_SECS, 1);
-    ring.style.strokeDashoffset = String(RING_CIRC * p);
-    const left = Math.ceil(LEGEND_SECS * (1 - p));
-    if (left < lastWhole && left > 0) {
-      lastWhole = left;
-      window.__audio?.play('countTick');
-    }
-    if (p >= 1) finishLegend();
-    else legendRaf = requestAnimationFrame(tick);
-  };
-  legendRaf = requestAnimationFrame(tick);
 }
 
 function finishLegend() {
-  if (legendDone) return; // Doppel-Tap / Race Ring-Ende vs. Tap
+  if (legendDone) return; // Doppel-Tap
   legendDone = true;
-  cancelAnimationFrame(legendRaf);
   $('legend-card').hidden = true;
   const num = $('count-num');
   num.textContent = 'LOS!';

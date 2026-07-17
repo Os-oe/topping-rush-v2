@@ -21,7 +21,7 @@ test.describe('Greybox — Kernloop', () => {
     expect(running).toBe(true);
   });
 
-  test('Legende (v2.1): 3 Zeilen auf 390 px komplett lesbar, Auto-Start nach ~5 s mit LOS!', async ({ page }) => {
+  test('Legende (v2.3): 3 Zeilen auf 390 px komplett lesbar, KEIN Auto-Start — wartet auf Tap', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 780 });
     await page.goto('/?seed=42');
     await page.locator('#name-input').fill('LegendeBot');
@@ -46,14 +46,21 @@ test.describe('Greybox — Kernloop', () => {
     expect(fits.left).toBeGreaterThanOrEqual(0);
     expect(fits.right).toBeLessThanOrEqual(fits.vw + 0.5);
     expect(fits.btnW).toBeGreaterThan(70); // Daumen-tauglich
-    // Ohne Tap: Ring läuft ab → „LOS!" (nur ~380 ms sichtbar → rAF-Polling) → Spiel
+    // v2.3: KEIN Auto-Start — Karte + dezenter Hinweis bleiben stehen
+    await expect(page.locator('.start-hint')).toBeVisible();
+    await expect(page.locator('.start-hint')).toContainText('Tippen');
+    await page.waitForTimeout(1500);
+    await expect(page.locator('#legend-card')).toBeVisible(); // steht noch
+    await expect(page.locator('#screen-game')).toBeHidden();
+    // Erst der Tap startet: „LOS!" (nur ~380 ms sichtbar → rAF-Polling) → Spiel
+    await page.locator('#btn-start-round').tap();
     await page.waitForFunction(
       () => {
         const num = document.getElementById('count-num');
         return !num.hidden && num.textContent === 'LOS!';
       },
       null,
-      { timeout: 8000, polling: 'raf' }
+      { timeout: 2000, polling: 'raf' }
     );
     await expect(page.locator('#screen-game')).toBeVisible({ timeout: 2000 });
   });

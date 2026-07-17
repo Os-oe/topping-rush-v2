@@ -156,10 +156,9 @@ body {
   animation: warnPulse 0.33s ease-in-out infinite alternate;
 }
 @keyframes warnPulse { from { opacity: 0.5; transform: scale(0.95); } to { opacity: 0.9; transform: scale(1.04); } }
-.start-ring-wrap { position: relative; width: 116px; height: 116px; margin-top: 2px; }
-.start-ring { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.ring-bg { fill: none; stroke: rgba(74,46,31,0.16); stroke-width: 9; }
-.ring-fg { fill: none; stroke: var(--teal); stroke-width: 9; stroke-linecap: round; }
+.start-wrap { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 8px; }
+.start-hint { font: 600 13px 'Nunito', system-ui, sans-serif; color: var(--ink-soft); animation: hintPulse 2.2s ease-in-out infinite; }
+@keyframes hintPulse { 50% { opacity: 0.45; } }
 .btn-start {
   position: absolute; inset: 13px; border-radius: 50%;
   background: var(--coral); color: #FFFFFF;
