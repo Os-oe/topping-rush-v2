@@ -229,23 +229,47 @@ function renderResultServer(stats, res) {
   }
   delta.classList.remove('offline');
   state.top = res.top || state.top;
+
+  // Sicherheitsnetz (18.07.): Der angezeigte Rang MUSS zur mitgelieferten
+  // Top-Liste passen — steht der eigene Name in res.top, gewinnt dessen
+  // Position über res.rank (fing live einen Server-Rang-Bug: „PLATZ 1!" bei
+  // sichtbarem Platz 2). deltaUp wird dann ebenfalls aus der Liste abgeleitet.
+  const meIdx = (res.top || []).findIndex((e) => e.name.toLowerCase() === state.name.toLowerCase());
+  const rank = meIdx >= 0 ? meIdx + 1 : res.rank;
+  let deltaUp = res.deltaUp;
+  if (meIdx > 0) {
+    const above = res.top[meIdx - 1];
+    deltaUp = { rank: meIdx, points: above.score - res.best };
+  } else if (meIdx === 0) {
+    deltaUp = null;
+  }
+
+  // Server-Bestwert ist die Wahrheit — localStorage angleichen, damit nach
+  // einem Admin-Reset keine Geister-Bestmarke stehen bleibt.
+  if (typeof res.best === 'number') {
+    localStorage.setItem(`tr-best-${state.name.toLowerCase()}`, String(res.best));
+    if (res.best !== stats.score && !res.isNewBest) {
+      $('res-best').textContent = `Deine Bestmarke: ${res.best} (${stats.score - res.best})`;
+    }
+  }
+
   // v2.4: Die API meldet den Rang des BESTWERTS (Best-of), nicht der Runde.
   // Jubel-Rang deshalb NUR bei echter neuer Bestmarke — sonst ehrlich beschriften.
   if (res.isNewBest) {
-    if (res.rank === 1) {
+    if (rank === 1) {
       $('res-rank').textContent = 'PLATZ 1!';
       $('res-delta').textContent = 'Du führst das Board an!';
-    } else if (res.rank) {
-      $('res-rank').textContent = `Platz ${res.rank}`;
-      if (res.deltaUp && res.deltaUp.points > 0) {
-        $('res-delta').textContent = `Nur ${res.deltaUp.points} Punkte hinter Platz ${res.deltaUp.rank}!`;
+    } else if (rank) {
+      $('res-rank').textContent = `Platz ${rank}`;
+      if (deltaUp && deltaUp.points > 0) {
+        $('res-delta').textContent = `Nur ${deltaUp.points} Punkte hinter Platz ${deltaUp.rank}!`;
       }
     }
-  } else if (res.rank) {
-    $('res-rank').textContent = `Dein Bestwert: ${res.best} — Platz ${res.rank}`;
+  } else if (rank) {
+    $('res-rank').textContent = `Dein Bestwert: ${res.best} — Platz ${rank}`;
     let msg = `Diese Runde: ${stats.score} — dein Bestwert zählt weiter`;
-    if (res.deltaUp && res.deltaUp.points > 0) {
-      msg += ` · Nur ${res.deltaUp.points} Punkte hinter Platz ${res.deltaUp.rank}!`;
+    if (deltaUp && deltaUp.points > 0) {
+      msg += ` · Nur ${deltaUp.points} Punkte hinter Platz ${deltaUp.rank}!`;
     }
     $('res-delta').textContent = msg;
   }

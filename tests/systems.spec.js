@@ -173,6 +173,40 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
   await expect(page.locator('#res-newbest')).toBeHidden();
 });
 
+test('Rang-Sicherheitsnetz: widerspricht res.rank der Top-Liste, gewinnt die Liste (Live-Bug 18.07.)', async ({ page }) => {
+  // Stub liefert absichtlich inkonsistente Daten: rank:1, aber top zeigt den
+  // Spieler hinter einem höheren Score — genau der ZRANK-statt-ZREVRANK-Bug.
+  // route VOR goto (LESSON v2.4: Poll-ab-Load macht späte Stubs wirkungslos).
+  await page.route('**/api/score', (route) =>
+    route.fulfill({
+      json: {
+        ok: true, rank: 1, best: 91, isNewBest: true, tries: 1,
+        deltaUp: null,
+        top: [{ name: 'Selcuk', score: 1551 }, { name: 'GuardBot', score: 91 }],
+      },
+    })
+  );
+  await page.goto('/?seed=42');
+  await page.evaluate(() => {
+    localStorage.setItem('tr-name', 'GuardBot');
+    window.__TR.state.name = 'GuardBot';
+    window.__TR.newGame({ autoSpawn: false });
+    const g = window.__TR.game;
+    g.stop();
+    for (let i = 0; i < 7; i++) {
+      g.spawnItem('topping', { x: g.cup.x, y: g.cupY - 10, variant: 'nar' });
+      g.update(1 / 60);
+    }
+    g.t = g.duration + 0.01;
+    g.update(1 / 60);
+    return 1;
+  });
+  await expect(page.locator('#screen-result')).toBeVisible();
+  // NICHT „PLATZ 1!" — die Liste zeigt GuardBot auf 2, also Platz 2 + Delta zur 1
+  await expect(page.locator('#res-rank')).toHaveText('Platz 2', { timeout: 5000 });
+  await expect(page.locator('#res-delta')).toContainText('Nur 1460 Punkte hinter Platz 1!');
+});
+
 test('Playing-Presence: Ping → Liste (alphabetisch, max 6), Submit löscht, TTL läuft ab', async ({ request }) => {
   // Eigener Rate-Limit-Bucket via x-forwarded-for: schont das knappe
   // Score-Budget (10/60 s) der Suite für die übrigen Tests
