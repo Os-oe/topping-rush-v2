@@ -28,7 +28,8 @@ export default defineConfig({
   ],
   webServer: {
     // exec-Pattern: node wird Haupt-PID → sauberer Teardown, test:2x läuft durch (MIXR-Lesson)
-    command: 'npm run build && exec node server.js',
+    // PLAYING_TTL_S=2: Presence-Ablauf (Prod 100 s) in Testzeit prüfbar (v2.4)
+    command: 'npm run build && PLAYING_TTL_S=2 exec node server.js',
     port: 4573,
     reuseExistingServer: false,
     timeout: 60_000,

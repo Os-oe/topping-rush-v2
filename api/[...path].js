@@ -33,10 +33,25 @@ export default async function handler(req, res) {
   try {
     // ---------- GET /api/leaderboard ----------
     if (path === '/api/leaderboard' && req.method === 'GET') {
-      const [top, cfg, rounds] = await Promise.all([store.top(10), store.getConfig(), store.getRounds()]);
+      const [top, cfg, rounds, playing] = await Promise.all([
+        store.top(10), store.getConfig(), store.getRounds(), store.playingList(),
+      ]);
       return send(res, 200, {
-        top, banner: cfg.banner, duration: cfg.duration, eventName: cfg.eventName, rounds, mode: store.mode,
+        top, banner: cfg.banner, duration: cfg.duration, eventName: cfg.eventName, rounds, playing, mode: store.mode,
       });
+    }
+
+    // ---------- POST /api/playing (v2.4: Presence „spielt gerade") ----------
+    if (path === '/api/playing' && req.method === 'POST') {
+      const body = await readBody(req);
+      if (!body) return send(res, 400, { error: 'bad_json' });
+      const n = sanitizeName(body.name);
+      if (!n.ok) return send(res, 400, { error: n.error });
+      if (!(await store.ratelimitPlaying(clientIp(req)))) {
+        return send(res, 429, { error: 'rate_limited' });
+      }
+      await store.setPlaying(n.name);
+      return send(res, 200, { ok: true });
     }
 
     // ---------- POST /api/score ----------
@@ -54,6 +69,7 @@ export default async function handler(req, res) {
       }
 
       await store.incrRounds(); // v2.4: jeder gültige Score-Submit = eine Runde
+      await store.clearPlaying(n.name); // v2.4: Runde vorbei → Presence weg
       const { changed, best, tries } = await store.submit(n.name, s.score);
       const rank = await store.rank(n.name);
       let deltaUp = null;

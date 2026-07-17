@@ -90,7 +90,22 @@ function finishLegend() {
   num.hidden = false;
   num.classList.add('go');
   window.__audio?.play('countGo');
+  pingPlaying(); // v2.4: „spielt gerade"-Presence fürs Board
   setTimeout(startGame, 380);
+}
+
+// v2.4: fire-and-forget Presence-Ping — darf den Spielstart NIE blockieren
+// oder crashen (Server löscht den Eintrag beim Score-Submit, TTL 100 s fängt
+// abgebrochene Runden ab)
+function pingPlaying() {
+  try {
+    if (!state.name) return;
+    fetch('/api/playing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: state.name }),
+    }).catch(() => {});
+  } catch { /* Presence ist rein optional */ }
 }
 
 $('btn-start-round').addEventListener('click', () => {

@@ -168,6 +168,41 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
   await expect(page.locator('#res-newbest')).toBeHidden();
 });
 
+test('Playing-Presence: Ping → Liste (alphabetisch, max 6), Submit löscht, TTL läuft ab', async ({ request }) => {
+  // Eigener Rate-Limit-Bucket via x-forwarded-for: schont das knappe
+  // Score-Budget (10/60 s) der Suite für die übrigen Tests
+  const headers = { 'x-forwarded-for': '10.99.0.1' };
+
+  let r = await request.post('/api/playing', { data: { name: 'Zoe' }, headers });
+  expect(r.status()).toBe(200);
+  await request.post('/api/playing', { data: { name: 'Adam' }, headers });
+  let lb = await (await request.get('/api/leaderboard')).json();
+  expect(lb.playing).toEqual(['Adam', 'Zoe']); // alphabetisch
+
+  // sanitizeName-Pipeline greift auch hier
+  r = await request.post('/api/playing', { data: { name: 'Häx<>!' }, headers });
+  expect(r.status()).toBe(400);
+  expect((await r.json()).error).toBe('name_chars');
+
+  // Score-Submit beendet die Runde → Presence des Namens weg
+  r = await request.post('/api/score', { data: { name: 'Zoe', score: 120 }, headers });
+  expect(r.status()).toBe(200);
+  lb = await (await request.get('/api/leaderboard')).json();
+  expect(lb.playing).toEqual(['Adam']);
+
+  // max 6, alphabetisch: 6 weitere Namen → 7 frisch, aber nur 6 geliefert
+  for (const name of ['B1', 'B2', 'B3', 'B4', 'B5', 'B6']) {
+    await request.post('/api/playing', { data: { name }, headers });
+  }
+  lb = await (await request.get('/api/leaderboard')).json();
+  expect(lb.playing).toEqual(['Adam', 'B1', 'B2', 'B3', 'B4', 'B5']);
+
+  // TTL (lokal PLAYING_TTL_S=2 via webServer-Env, Prod 100 s) → alles läuft ab
+  await new Promise((resolve) => setTimeout(resolve, 2600));
+  lb = await (await request.get('/api/leaderboard')).json();
+  expect(lb.playing).toEqual([]);
+});
+
 test('/board: ohne Gate sofort sichtbar, QR-Kachel weiß, Daten ab Load gepollt', async ({ page, request }) => {
   await request.post('/api/admin', { data: { pin: PIN, action: 'reset' } });
   await request.post('/api/score', { data: { name: 'BoardStar', score: 777 } });
@@ -189,6 +224,8 @@ test('/board: ohne Gate sofort sichtbar, QR-Kachel weiß, Daten ab Load gepollt'
   // v2.4: Runden-Zähler im Header (1 Submit seit Reset), Count-up landet auf 1
   await expect(page.locator('#board-rounds')).toContainText('Runden');
   await expect(page.locator('#rounds-num')).toHaveText('1');
+  // v2.4: Playing-Zeile versteckt, wenn niemand spielt
+  await expect(page.locator('#board-playing')).toBeHidden();
   await expect(page.locator('#offline-badge')).toBeHidden();
   await request.post('/api/admin', { data: { pin: PIN, action: 'banner', value: '' } });
 });

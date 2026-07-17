@@ -35,6 +35,10 @@
     <section class="board-main">
       <ol id="board-list" class="board-list"></ol>
       <aside class="board-side">
+        <!-- v2.4: „spielt gerade"-Zeile zwischen Liste und QR, versteckt wenn leer -->
+        <p id="board-playing" class="board-playing" hidden>
+          <span class="playing-dot" aria-hidden="true"></span><span id="playing-text"></span>
+        </p>
         <div class="arch-frame">
           <svg class="arch" viewBox="0 0 100 132" preserveAspectRatio="none" aria-hidden="true">
             <path d="M5 129 L5 50 Q5 15 50 4 Q95 15 95 50 L95 129" />

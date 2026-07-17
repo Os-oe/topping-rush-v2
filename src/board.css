@@ -66,6 +66,22 @@
 .b-score { font-weight: 800; text-align: right; }
 
 .board-side { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.2vh; width: 24vw; }
+/* v2.4: Presence-Zeile — dezent (Nunito, ink-soft), pulsierender Punkt */
+.board-playing {
+  display: flex; align-items: center; gap: 1vh; max-width: 100%;
+  font-family: 'Nunito', sans-serif; font-weight: 700; font-size: 1.9vh;
+  color: var(--ink-soft);
+}
+#playing-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.playing-dot {
+  width: 1.2vh; height: 1.2vh; flex: none; border-radius: 50%;
+  background: var(--lime);
+  animation: playingPulse 1.6s ease-in-out infinite;
+}
+@keyframes playingPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(0.72); opacity: 0.45; }
+}
 /* Weiße QR-Kachel als Insel — NIE invertieren; Quiet Zone ≥ 4 Module via Padding;
    Kontur-Rahmen sitzt AUSSEN an der Kachel */
 .qr-tile {

@@ -35,8 +35,8 @@ test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti 
   // 1. Poll = Basis-Stand, ab 2. Poll = neuer Rekord
   const base = { duration: 60, eventName: 'Test', banner: '', mode: 'memory' };
   const seq = [
-    { ...base, top: [{ name: 'Basis', score: 400 }] },
-    { ...base, top: [{ name: 'Sturm', score: 900 }, { name: 'Basis', score: 400 }] },
+    { ...base, rounds: 41, playing: ['LISA', 'OSMAN'], top: [{ name: 'Basis', score: 400 }] },
+    { ...base, rounds: 42, playing: ['OSMAN'], top: [{ name: 'Sturm', score: 900 }, { name: 'Basis', score: 400 }] },
   ];
   let i = 0;
   await page.route('**/api/leaderboard', (route) => {
@@ -46,6 +46,10 @@ test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti 
   // v2.4: Board sofort sichtbar — kein Start-Gate, keine Geste
   await expect(page.locator('#board')).toBeVisible();
   await expect(page.locator('#board-list li.rank-1 .b-name')).toHaveText('Basis');
+  // v2.4: Runden-Zähler + Playing-Zeile (Plural) aus dem ersten Poll
+  await expect(page.locator('#rounds-num')).toHaveText('41');
+  await expect(page.locator('#board-playing')).toBeVisible();
+  await expect(page.locator('#playing-text')).toHaveText('LISA, OSMAN spielen gerade…');
   // Erst-Load: KEINE Celebration
   await expect(page.locator('#celebrate-pop')).toBeHidden();
   // 2. Poll (+3 s): Sturm stürmt auf Platz 1 → Rekord-Celebration ~6 s
@@ -54,6 +58,9 @@ test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti 
   await expect(page.locator('#celebrate-canvas')).toBeVisible();
   await expect(page.locator('#board-list')).toHaveClass(/gold-pulse/);
   await expect(page.locator('#board-list li.rank-1 .b-name')).toHaveText('Sturm');
+  // v2.4: Count-up auf 42, Playing-Zeile jetzt Singular
+  await expect(page.locator('#rounds-num')).toHaveText('42');
+  await expect(page.locator('#playing-text')).toHaveText('OSMAN spielt gerade…');
   // Celebration endet und räumt auf (Banner weg, Canvas hidden, Puls weg)
   await expect(page.locator('#celebrate-pop')).toBeHidden({ timeout: 9000 });
   await expect(page.locator('#celebrate-canvas')).toBeHidden();

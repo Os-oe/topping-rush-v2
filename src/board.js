@@ -183,11 +183,23 @@ function renderRounds(target) {
 
 function render(data) {
   // Re-Render nur bei Datenänderung (MIXR-Lesson: Polling-DOM frisst sonst Klicks/Flackern)
-  const json = JSON.stringify([data.top, data.banner, data.eventName, data.rounds]);
+  const json = JSON.stringify([data.top, data.banner, data.eventName, data.rounds, data.playing]);
   if (json === lastJson) return;
   lastJson = json;
 
   renderRounds(data.rounds);
+
+  // v2.4: „spielt gerade"-Zeile — versteckt (und Text geleert) wenn leer
+  const playing = data.playing || [];
+  const pl = $('board-playing');
+  if (playing.length) {
+    $('playing-text').textContent =
+      playing.join(', ') + (playing.length === 1 ? ' spielt gerade…' : ' spielen gerade…');
+    pl.hidden = false;
+  } else {
+    $('playing-text').textContent = '';
+    pl.hidden = true;
+  }
 
   // v2.2: Celebration-Erkennung VOR dem Stand-Update; Erst-Load (prevTop null)
   // setzt nur den Vergleichsstand und feiert nichts
