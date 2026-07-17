@@ -9,12 +9,10 @@
   <link rel="stylesheet" href="/src/board.css" />
 </head>
 <body class="board-body">
-  <div id="board-start" class="board-start">
-    <h1 class="logo">TOPPING RUSH</h1>
-    <button id="btn-board-start" class="btn-big">BOARD STARTEN</button>
-    <p class="board-hint">Ein Tap: Vollbild + Display bleibt an</p>
-  </div>
-  <main id="board" hidden>
+  <!-- v2.4: kein Start-Gate mehr — Board + Polling ab Load; Fullscreen + Wake
+       Lock (braucht die eine Geste) wandern in den dezenten Button oben rechts -->
+  <button id="btn-fullscreen" class="btn-fullscreen" title="Vollbild + Display bleibt an">⛶ Vollbild</button>
+  <main id="board">
     <header id="board-header">
       <div class="board-title-wrap">
         <h1 class="board-title">TOPPING RUSH</h1>

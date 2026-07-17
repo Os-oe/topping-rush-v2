@@ -1,7 +1,8 @@
 // v2.2-Gate: Board-Celebration — Trigger-Logik (rein) + Integration über den
-// 5-s-Poll. Der Poll wird mit einem fetch-Stub gefüttert statt echter
-// /api/score-Submits: das Rate-Limit-Budget der Suite (10/60 s) bleibt
-// unangetastet (Lesson aus dem /admin-UI-Test).
+// Poll (v2.4: 3 s, startet ab Seiten-Load). Der Poll wird per route-Stub
+// gefüttert statt echter /api/score-Submits: das Rate-Limit-Budget der Suite
+// (10/60 s) bleibt unangetastet (Lesson aus dem /admin-UI-Test). route statt
+// fetch-Stub, weil das Board seit v2.4 schon beim Load pollt.
 import { test, expect } from '@playwright/test';
 
 test('Celebration-Trigger: Erst-Load nie, neuer/verbesserter Top-3 ja, Rang 4 nein', async ({ page }) => {
@@ -30,27 +31,24 @@ test('Celebration-Trigger: Erst-Load nie, neuer/verbesserter Top-3 ja, Rang 4 ne
 
 test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti + Gold-Puls, danach Cleanup', async ({ page }) => {
   test.setTimeout(45_000);
-  await page.goto('/board');
-  // Poll-Antworten stubben: 1. Poll = Basis-Stand, ab 2. Poll = neuer Rekord
-  await page.evaluate(() => {
-    const base = { duration: 60, eventName: 'Test', banner: '', mode: 'memory' };
-    const seq = [
-      { ...base, top: [{ name: 'Basis', score: 400 }] },
-      { ...base, top: [{ name: 'Sturm', score: 900 }, { name: 'Basis', score: 400 }] },
-    ];
-    let i = 0;
-    window.fetch = async () => ({
-      ok: true,
-      json: async () => seq[Math.min(i++, seq.length - 1)],
-    });
-    return 1;
+  // Poll-Antworten stubben (VOR goto — v2.4 pollt ab Load):
+  // 1. Poll = Basis-Stand, ab 2. Poll = neuer Rekord
+  const base = { duration: 60, eventName: 'Test', banner: '', mode: 'memory' };
+  const seq = [
+    { ...base, top: [{ name: 'Basis', score: 400 }] },
+    { ...base, top: [{ name: 'Sturm', score: 900 }, { name: 'Basis', score: 400 }] },
+  ];
+  let i = 0;
+  await page.route('**/api/leaderboard', (route) => {
+    route.fulfill({ json: seq[Math.min(i++, seq.length - 1)] });
   });
-  await page.locator('#btn-board-start').tap();
+  await page.goto('/board');
+  // v2.4: Board sofort sichtbar — kein Start-Gate, keine Geste
   await expect(page.locator('#board')).toBeVisible();
   await expect(page.locator('#board-list li.rank-1 .b-name')).toHaveText('Basis');
   // Erst-Load: KEINE Celebration
   await expect(page.locator('#celebrate-pop')).toBeHidden();
-  // 2. Poll (+5 s): Sturm stürmt auf Platz 1 → Rekord-Celebration ~6 s
+  // 2. Poll (+3 s): Sturm stürmt auf Platz 1 → Rekord-Celebration ~6 s
   await expect(page.locator('#celebrate-pop')).toBeVisible({ timeout: 9000 });
   await expect(page.locator('#celebrate-text')).toContainText('NEUER REKORD: Sturm');
   await expect(page.locator('#celebrate-canvas')).toBeVisible();

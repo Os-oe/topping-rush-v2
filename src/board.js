@@ -1,5 +1,6 @@
-// TV-Board: Top 10, Gewinn-Banner, weiße QR-Kachel, Fullscreen + Wake Lock
-// in EINER Geste, 5-s-Polling mit Offline-Badge.
+// TV-Board: Top 10, Gewinn-Banner, weiße QR-Kachel, Polling ab Seiten-Load
+// (v2.4: kein Start-Gate). Fullscreen + Wake Lock in EINER Geste über den
+// dezenten Vollbild-Button. 3-s-Polling, bei document.hidden 30 s.
 import QrCreator from 'qr-creator';
 
 const $ = (id) => document.getElementById(id);
@@ -126,19 +127,18 @@ async function acquireWakeLock() {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible' && !wakeLock) acquireWakeLock();
+  if (document.visibilityState === 'visible') {
+    if (!wakeLock) acquireWakeLock();
+    poll(); // v2.4: bei Rückkehr sofort frischer Stand (und zurück auf 3-s-Takt)
+  }
 });
 
-$('btn-board-start').addEventListener('click', async () => {
-  // EINE Geste: Fullscreen + Wake Lock
+// v2.4: EINE Geste — Fullscreen + Wake Lock; das Board läuft davor schon
+$('btn-fullscreen').addEventListener('click', async () => {
   try {
     await document.documentElement.requestFullscreen?.();
   } catch { /* Fullscreen optional */ }
   await acquireWakeLock();
-  $('board-start').hidden = true;
-  $('board').hidden = false;
-  renderQr();
-  poll();
 });
 
 function renderQr() {
@@ -196,7 +196,17 @@ function render(data) {
   }
 }
 
+// v2.4: 3-s-Takt sichtbar, 30 s bei document.hidden (Redis-Free-Tier-Schonung);
+// in-flight-Guard, damit visibilitychange-Sofort-Polls keine zweite Kette starten
+const POLL_MS = 3000;
+const POLL_HIDDEN_MS = 30_000;
+let pollTimer = null;
+let polling = false;
+
 async function poll() {
+  if (polling) return;
+  polling = true;
+  clearTimeout(pollTimer);
   try {
     const data = await fetchBoard();
     $('offline-badge').hidden = true;
@@ -204,5 +214,10 @@ async function poll() {
   } catch {
     $('offline-badge').hidden = false; // letzten Stand weiterzeigen
   }
-  setTimeout(poll, 5000);
+  polling = false;
+  pollTimer = setTimeout(poll, document.hidden ? POLL_HIDDEN_MS : POLL_MS);
 }
+
+// Boot: Board ist sofort sichtbar — QR rendern, Polling starten
+renderQr();
+poll();

@@ -162,15 +162,16 @@ test('UI-Flow: Runde endet → Server-Rang + Delta + Top 10 auf dem Ergebnis-Scr
   await expect(page.locator('#res-newbest')).toBeHidden();
 });
 
-test('/board: Start-Geste → Board sichtbar, QR-Kachel weiß, Daten gepollt', async ({ page, request }) => {
+test('/board: ohne Gate sofort sichtbar, QR-Kachel weiß, Daten ab Load gepollt', async ({ page, request }) => {
   await request.post('/api/admin', { data: { pin: PIN, action: 'reset' } });
   await request.post('/api/score', { data: { name: 'BoardStar', score: 777 } });
   await request.post('/api/admin', { data: { pin: PIN, action: 'banner', value: 'Sieger bekommt 1 Drink!' } });
 
   await page.goto('/board');
-  await expect(page.locator('#board-start')).toBeVisible();
-  await page.locator('#btn-board-start').tap();
+  // v2.4: kein Start-Overlay mehr — Board + Daten ohne jede Geste
+  await expect(page.locator('#board-start')).toHaveCount(0);
   await expect(page.locator('#board')).toBeVisible();
+  await expect(page.locator('#btn-fullscreen')).toBeVisible(); // dezenter Vollbild-Button
 
   // QR: Canvas in weißer Kachel (nie invertiert)
   await expect(page.locator('.qr-tile canvas')).toHaveCount(1);
