@@ -11,7 +11,7 @@ export const LEGAL_HTML = `
 <p>
   E-Mail: osman@osai.solutions<br />
   Telefon: +49 173 1956617<br />
-  Web: <a href="https://osai.solutions" style="color:#00F0FF">osai.solutions</a>
+  Web: <a href="https://osai.solutions" style="color:#1E9C90">osai.solutions</a>
 </p>
 <p>Umsatzsteuer-Identifikationsnummer gemäß § 27a UStG: DE462559965</p>
 <p>Verantwortlich für den Inhalt: Osman Öztopcu (Anschrift wie oben)</p>
