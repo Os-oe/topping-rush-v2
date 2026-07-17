@@ -5,28 +5,39 @@
 // fetch-Stub, weil das Board seit v2.4 schon beim Load pollt.
 import { test, expect } from '@playwright/test';
 
-test('Celebration-Trigger: Erst-Load nie, neuer/verbesserter Top-3 ja, Rang 4 nein', async ({ page }) => {
+test('Celebration-Trigger v2.5 (id-basiert): Erst-Load nie, neuer id in Top 3 ja, Rang 4 nein, Mehrfach-Name ok', async ({ page }) => {
   await page.goto('/board');
   const logic = await page.evaluate(() => {
     const d = window.__BOARD.detectCelebration;
     return {
-      firstLoad: d(null, [{ name: 'A', score: 100 }]),
-      newLeader: d([{ name: 'A', score: 100 }], [{ name: 'B', score: 200 }, { name: 'A', score: 100 }]),
-      improved: d([{ name: 'A', score: 100 }], [{ name: 'A', score: 150 }]),
-      unchanged: d([{ name: 'A', score: 100 }], [{ name: 'A', score: 100 }]),
-      rank4: d(
-        [{ name: 'A', score: 400 }, { name: 'B', score: 300 }, { name: 'C', score: 200 }],
-        [{ name: 'A', score: 400 }, { name: 'B', score: 300 }, { name: 'C', score: 200 }, { name: 'E', score: 150 }]
+      firstLoad: d(null, [{ name: 'A', score: 100, id: 'A#r1' }]),
+      newLeader: d(
+        [{ name: 'A', score: 100, id: 'A#r1' }],
+        [{ name: 'B', score: 200, id: 'B#r1' }, { name: 'A', score: 100, id: 'A#r1' }]
       ),
-      caseInsensitiv: d([{ name: 'Ayse', score: 100 }], [{ name: 'AYSE', score: 100 }]),
+      // v2.5: „verbessert" = NEUE Runde desselben Namens = neuer id
+      newRunSameName: d(
+        [{ name: 'A', score: 100, id: 'A#r1' }],
+        [{ name: 'A', score: 150, id: 'A#r2' }, { name: 'A', score: 100, id: 'A#r1' }]
+      ),
+      unchanged: d([{ name: 'A', score: 100, id: 'A#r1' }], [{ name: 'A', score: 100, id: 'A#r1' }]),
+      rank4: d(
+        [{ name: 'A', score: 400, id: 'A#r1' }, { name: 'B', score: 300, id: 'B#r1' }, { name: 'C', score: 200, id: 'C#r1' }],
+        [{ name: 'A', score: 400, id: 'A#r1' }, { name: 'B', score: 300, id: 'B#r1' }, { name: 'C', score: 200, id: 'C#r1' }, { name: 'E', score: 150, id: 'E#r1' }]
+      ),
+      // Alt-Member ohne '#' (id = Name) bleiben stabil — kein Fehl-Feuern
+      legacyStable: d(
+        [{ name: 'Selcuk', score: 1551, id: 'Selcuk' }],
+        [{ name: 'Selcuk', score: 1551, id: 'Selcuk' }]
+      ),
     };
   });
   expect(logic.firstLoad).toBeNull();
   expect(logic.newLeader).toEqual({ name: 'B', rank: 1 });
-  expect(logic.improved).toEqual({ name: 'A', rank: 1 });
+  expect(logic.newRunSameName).toEqual({ name: 'A', rank: 1 });
   expect(logic.unchanged).toBeNull();
   expect(logic.rank4).toBeNull();
-  expect(logic.caseInsensitiv).toBeNull();
+  expect(logic.legacyStable).toBeNull();
 });
 
 test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti + Gold-Puls, danach Cleanup', async ({ page }) => {
@@ -35,8 +46,13 @@ test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti 
   // 1. Poll = Basis-Stand, ab 2. Poll = neuer Rekord
   const base = { duration: 60, eventName: 'Test', banner: '', mode: 'memory' };
   const seq = [
-    { ...base, rounds: 41, playing: ['LISA', 'OSMAN'], top: [{ name: 'Basis', score: 400 }] },
-    { ...base, rounds: 42, playing: ['OSMAN'], top: [{ name: 'Sturm', score: 900 }, { name: 'Basis', score: 400 }] },
+    { ...base, rounds: 41, playing: ['LISA', 'OSMAN'], top: [{ name: 'Basis', score: 400, id: 'Basis#r1' }] },
+    // v2.5: zweite Sturm-Runde bleibt liegen — derselbe Name 2× auf dem Board
+    { ...base, rounds: 42, playing: ['OSMAN'], top: [
+      { name: 'Sturm', score: 900, id: 'Sturm#r2' },
+      { name: 'Basis', score: 400, id: 'Basis#r1' },
+      { name: 'Sturm', score: 350, id: 'Sturm#r1' },
+    ] },
   ];
   let i = 0;
   await page.route('**/api/leaderboard', (route) => {
@@ -58,6 +74,9 @@ test('Celebration-Integration: neuer Platz 1 im Poll → 🏆-Banner + Konfetti 
   await expect(page.locator('#celebrate-canvas')).toBeVisible();
   await expect(page.locator('#board-list')).toHaveClass(/gold-pulse/);
   await expect(page.locator('#board-list li.rank-1 .b-name')).toHaveText('Sturm');
+  // v2.5: Mehrfach-Name — beide Sturm-Runden werden 1:1 gerendert
+  await expect(page.locator('#board-list li .b-name').filter({ hasText: 'Sturm' })).toHaveCount(2);
+  await expect(page.locator('#board-list li.rank-3 .b-score')).toHaveText('350');
   // v2.4: Count-up auf 42, Playing-Zeile jetzt Singular
   await expect(page.locator('#rounds-num')).toHaveText('42');
   await expect(page.locator('#playing-text')).toHaveText('OSMAN spielt gerade…');

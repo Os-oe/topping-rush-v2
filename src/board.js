@@ -15,15 +15,16 @@ let prevTop = null; // null = Erst-Load (leerer Vergleichsstand)
 let celebrating = false;
 const celebrationQueue = [];
 
-// Reine Trigger-Logik (Test-Hook window.__BOARD): max 1 pro Poll-Zyklus —
-// der beste neue/verbesserte Top-3-Eintrag gewinnt.
+// Reine Trigger-Logik (Test-Hook window.__BOARD): max 1 pro Poll-Zyklus.
+// v2.5 id-basiert: jede Runde ist ein eigener Member (name#runId), Namen
+// dürfen mehrfach vorkommen — gefeiert wird ein NEUER id in den Top 3
+// (Vergleich über das Set der bekannten Top-3-ids, nicht über Namen).
 function detectCelebration(oldTop, newTop) {
   if (!oldTop) return null;
-  const old = new Map(oldTop.map((e) => [e.name.toLowerCase(), e.score]));
+  const known = new Set(oldTop.slice(0, 3).map((e) => e.id));
   for (let i = 0; i < Math.min(3, newTop.length); i++) {
     const e = newTop[i];
-    const prev = old.get(e.name.toLowerCase());
-    if (prev === undefined || e.score > prev) return { name: e.name, rank: i + 1 };
+    if (!known.has(e.id)) return { name: e.name, rank: i + 1 };
   }
   return null;
 }
@@ -205,7 +206,7 @@ function render(data) {
   // setzt nur den Vergleichsstand und feiert nichts
   const top10 = (data.top || []).slice(0, 10);
   const cel = detectCelebration(prevTop, top10);
-  prevTop = top10.map((e) => ({ name: e.name, score: e.score }));
+  prevTop = top10.map((e) => ({ name: e.name, score: e.score, id: e.id }));
   if (cel) enqueueCelebration(cel);
 
   $('board-event').textContent = data.eventName || '';
