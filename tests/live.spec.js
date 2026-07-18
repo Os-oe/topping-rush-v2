@@ -160,8 +160,12 @@ test('Live v2.5: zwei Runden desselben Namens BEIDE in Top 10, Ränge listen-kon
   expect(osman).toBeTruthy();
   expect(osman.score).toBe(1519);
 
-  // (c) Board zeigt BEIDE Runden live ohne Reload (≤ 4 s nach Submit)
+  // (c) Board zeigt BEIDE Runden live ohne Reload (≤ 4 s nach Submit).
+  // QA 18.07.: Selcuk/Osman nur ≥ 1 statt genau 1 — echte Spieler dürfen unter
+  // v2.5 („jede Runde zählt") legitim mehrfach in der Top 10 stehen (Osman
+  // stand mit 1519 UND 1450 drauf); der inhaltliche Alt-Eintrag-Check läuft
+  // oben id-basiert gegen run2.top.
   await expect(board.locator('#board-list li').filter({ hasText: NAME })).toHaveCount(2, { timeout: 4000 });
-  await expect(board.locator('#board-list li').filter({ hasText: 'Selcuk' })).toHaveCount(1);
-  await expect(board.locator('#board-list li').filter({ hasText: 'Osman' })).toHaveCount(1);
+  await expect(board.locator('#board-list li').filter({ hasText: 'Selcuk' })).not.toHaveCount(0);
+  await expect(board.locator('#board-list li').filter({ hasText: 'Osman' })).not.toHaveCount(0);
 });
