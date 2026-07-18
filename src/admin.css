@@ -7,7 +7,8 @@
 #admin-panel { display: flex; flex-direction: column; gap: 16px; }
 .admin-card { background: var(--cream); border: 2.5px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .admin-card h2 { font-family: 'Baloo 2', sans-serif; font-weight: 800; font-size: 1rem; }
-.admin-card input[type="text"], .admin-card input:not([type]) { padding: 10px 14px; background: #FFFFFF; border: 2px solid var(--line); border-radius: 999px; color: var(--ink); width: 100%; font-family: 'Nunito', sans-serif; font-weight: 600; }
+/* font-size ≥ 16px: sonst zoomt iOS-Safari beim Fokus die ganze Seite (QA 18.07.) */
+.admin-card input[type="text"], .admin-card input:not([type]) { padding: 10px 14px; background: #FFFFFF; border: 2px solid var(--line); border-radius: 999px; color: var(--ink); width: 100%; font-family: 'Nunito', sans-serif; font-weight: 600; font-size: 1rem; }
 .btn-small { padding: 10px 20px; border: 2.5px solid var(--ink); border-radius: 999px; background: var(--teal); color: #fff; font-family: 'Baloo 2', sans-serif; font-weight: 800; cursor: pointer; align-self: flex-start; box-shadow: 0 3px 0 var(--ink); }
 .btn-small:active { transform: translateY(2px); box-shadow: 0 0 0 var(--ink); }
 .btn-danger { background: var(--red); color: #fff; }
