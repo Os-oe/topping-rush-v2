@@ -41,12 +41,30 @@ export class Game {
   resize() {
     const dpr = Math.min(window.devicePixelRatio || 1, CFG.dprCap);
     const rect = this.canvas.getBoundingClientRect();
+    const oldW = this.W;
     this.W = Math.round(rect.width);
     this.H = Math.round(rect.height);
     this.canvas.width = Math.round(rect.width * dpr);
     this.canvas.height = Math.round(rect.height * dpr);
     this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.dpr = dpr;
+    // QA 18.07. (Checkliste d): Adressleisten-Ein-/Ausblenden mid-round feuert
+    // resize — ohne Re-Anker schwebt der Becher (cupY stammte aus start()).
+    // Becher bleibt am unteren Rand verankert; bei Breiten-Änderung (Rotation)
+    // werden Becher- und Item-X proportional übernommen. Fall-Tempo (vy) läuft
+    // pro Item weiter — ein Höhen-Delta < 120 px verändert die Runde nicht.
+    if (this.cup) {
+      this.cupY = this.H - CFG.cupBottomOffset;
+      if (oldW && this.W !== oldW) {
+        const fx = this.W / oldW;
+        this.cup.x *= fx;
+        this.cup.target *= fx;
+        for (const it of this.items) {
+          it.x *= fx;
+          it.baseX *= fx;
+        }
+      }
+    }
   }
 
   // ---------- Runden-Setup ----------
