@@ -59,6 +59,16 @@ class AudioSys {
     this.musicSrc = src;
   }
 
+  // iOS/Android suspendieren den Context bei Tab-Wechsel/Screen-Lock (iOS
+  // meldet auch den Nicht-Standard-State 'interrupted') — ohne resume() bleibt
+  // das Spiel nach Rückkehr stumm. Wird von visibilitychange/focus/pageshow
+  // UND vor jedem play()/event() gerufen (QA 18.07., Checkliste b).
+  resumeIfNeeded() {
+    if (this.ctx && this.ctx.state !== 'running') {
+      try { this.ctx.resume()?.catch?.(() => {}); } catch { /* resume optional */ }
+    }
+  }
+
   setMuted(m) {
     this.muted = m;
     if (this.master) {
@@ -210,6 +220,7 @@ class AudioSys {
   // ---------- benannte SFX ----------
   play(name, opts = {}) {
     if (!this.ctx) return;
+    this.resumeIfNeeded();
     switch (name) {
       case 'catch': {
         // Sinus-Pluck, Pitch +1 Halbton pro Combo-Stufe (Cap +12)
@@ -283,6 +294,7 @@ class AudioSys {
   // ---------- Spiel-Events → Sounds (Kaskade: Sound SOFORT) ----------
   event(type, data, g) {
     if (!this.ctx) return;
+    this.resumeIfNeeded();
     switch (type) {
       case 'start':
         this.stopAllContinuous();
@@ -353,4 +365,13 @@ class AudioSys {
 }
 
 window.__audio = new AudioSys();
+
+// Rückkehr aus Hintergrund/Screen-Lock → Context wieder anwerfen (Checkliste b).
+// pageshow fängt zusätzlich den bfcache-Restore von Safari ab.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') window.__audio.resumeIfNeeded();
+});
+window.addEventListener('focus', () => window.__audio.resumeIfNeeded());
+window.addEventListener('pageshow', () => window.__audio.resumeIfNeeded());
+
 export default window.__audio;
