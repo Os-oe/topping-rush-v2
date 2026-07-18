@@ -199,7 +199,11 @@ button, input { touch-action: manipulation; }
 .c-red { color: var(--red); } .c-teal { color: var(--teal-dark); }
 
 /* ---------- Game ---------- */
-#screen-game { display: block; background: linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%); }
+/* touch-action:none NUR hier: `manipulation` (global) erlaubt weiter Pan-Gesten —
+   Android-Chrome deutet horizontales Wischen als Scroll und feuert pointercancel,
+   danach kommen KEINE pointermove mehr (Tippen ging, Swipen nicht; 18.07.).
+   Auf der Spielfläche muss der Browser Touch komplett dem Spiel überlassen. */
+#screen-game { display: block; touch-action: none; background: linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 55%, var(--bg-2) 100%); }
 #game-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 #hud {
   position: absolute; top: 0; left: 0; right: 0;

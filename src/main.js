@@ -151,7 +151,13 @@ function updateHud(g) {
 // Input: ganzer Game-Screen ist Touchfläche, absolute X, Y ignoriert
 const gameScreen = $('screen-game');
 gameScreen.addEventListener('pointerdown', (e) => {
+  // Pointer ans Spielfeld binden: move-Events bleiben auch dann bei uns, wenn
+  // der Finger den Screen-Rand streift (Android-Robustheit zu touch-action:none)
+  try { gameScreen.setPointerCapture(e.pointerId); } catch { /* optional */ }
   state.game?.pointerDown(e.clientX);
+});
+gameScreen.addEventListener('pointercancel', (e) => {
+  try { gameScreen.releasePointerCapture(e.pointerId); } catch { /* optional */ }
 });
 gameScreen.addEventListener('pointermove', (e) => {
   if (!state.game) return;

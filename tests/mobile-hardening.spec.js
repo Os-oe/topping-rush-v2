@@ -181,4 +181,36 @@ test.describe('Mobile-Härtung (Checkliste a–j)', () => {
     expect(errors, errors.join('\n')).toEqual([]);
     // Runde NICHT zu Ende laufen lassen — kein Score-Submit (Rate-Limit-Budget)
   });
+
+  test('(k) Swipe-Steuerung Android: Spielfläche touch-action:none, echter Drag bewegt den Becher', async ({ page, browserName }) => {
+    // Bug 18.07.: globales touch-action:manipulation erlaubt Pan-Gesten —
+    // Android-Chrome cancelte den Pointer beim horizontalen Wischen (Tippen
+    // ging, Swipen nicht). Spielfläche MUSS touch-action:none haben.
+    await page.goto('/?seed=42');
+    await page.evaluate(() => window.__TR.newGame({ autoSpawn: false }));
+    const ta = await page.locator('#screen-game').evaluate((el) => getComputedStyle(el).touchAction);
+    expect(ta).toBe('none');
+
+    // Echter Touch-Drag (CDP-Gesten gibt es nur in Chromium; WebKit deckt der
+    // iPhone-Live-Betrieb ab — dort trat der Bug nie auf)
+    test.skip(browserName !== 'chromium', 'CDP Input.dispatchTouchEvent ist Chromium-only');
+    const cdp = await page.context().newCDPSession(page);
+    const drag = async (fromX, toX, y) => {
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: fromX, y }] });
+      const steps = 12;
+      for (let i = 1; i <= steps; i++) {
+        const x = fromX + ((toX - fromX) * i) / steps;
+        await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y }] });
+      }
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    };
+    await drag(80, 330, 500); // horizontaler Wisch nach rechts
+    await page.waitForTimeout(350); // Lerp ausschwingen lassen
+    const x1 = await page.evaluate(() => window.__TR.game.cup.x);
+    expect(x1).toBeGreaterThan(280); // Becher IST dem Wisch gefolgt (kein pointercancel-Abriss)
+    await drag(330, 60, 500); // und zurück nach links
+    await page.waitForTimeout(350);
+    const x2 = await page.evaluate(() => window.__TR.game.cup.x);
+    expect(x2).toBeLessThan(120);
+  });
 });
