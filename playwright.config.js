@@ -18,10 +18,31 @@ export default defineConfig({
       },
     },
     {
+      // iPhone-Profil (WebKit = Safari-Engine) — gleiche lokale Specs wie
+      // 'mobile'. balance.spec bleibt Chromium-only: die Bot-Heuristik ist
+      // auf Chromium-Frame-Timing kalibriert (setInterval/rAF-Jitter weicht
+      // in WebKit ab, die Bänder würden nur Engine-Rauschen messen).
+      name: 'iphone',
+      testIgnore: [/live\.spec\.js/, /balance\.spec\.js/],
+      use: {
+        ...devices['iPhone 13'],
+        baseURL: 'http://127.0.0.1:4573',
+      },
+    },
+    {
       name: 'live',
       testMatch: /live\.spec\.js/,
       use: {
         ...devices['Pixel 7'],
+        baseURL: process.env.LIVE_URL || 'https://topping-rush-v2.demo.osai.solutions',
+      },
+    },
+    {
+      // Live-Smoke auf der Safari-Engine (Kern-Flow gegen die Live-URL)
+      name: 'live-iphone',
+      testMatch: /live\.spec\.js/,
+      use: {
+        ...devices['iPhone 13'],
         baseURL: process.env.LIVE_URL || 'https://topping-rush-v2.demo.osai.solutions',
       },
     },

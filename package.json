@@ -9,8 +9,12 @@
     "preview": "vite preview",
     "serve": "npm run build && node server.js",
     "test": "playwright test --project=mobile",
+    "test:iphone": "playwright test --project=iphone",
     "test:2x": "playwright test --project=mobile && playwright test --project=mobile",
-    "test:live": "LIVE_URL=https://topping-rush-v2.demo.osai.solutions playwright test tests/live.spec.js --project=live"
+    "test:iphone:2x": "playwright test --project=iphone && playwright test --project=iphone",
+    "test:all": "npm run test:2x && npm run test:iphone:2x",
+    "test:live": "LIVE_URL=https://topping-rush-v2.demo.osai.solutions playwright test tests/live.spec.js --project=live",
+    "test:live:iphone": "LIVE_URL=https://topping-rush-v2.demo.osai.solutions playwright test tests/live.spec.js --project=live-iphone"
   },
   "dependencies": {
     "@upstash/ratelimit": "^2.0.5",
