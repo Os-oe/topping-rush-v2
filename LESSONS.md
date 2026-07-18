@@ -128,6 +128,37 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
   kein await im Spielstart-Pfad — Presence kann komplett ausfallen, ohne dass
   ein Spieler es merkt. Server räumt via Score-Submit + TTL doppelt auf.
 
+## Nachtrag v2.5 (18.07., Update-Session — Jede Runde zählt + härteres Endgame)
+
+- **Sorted-Set-Umbau ohne Migration:** Member-Format `name#<runId>` + „Anzeige
+  = Teil vor dem LETZTEN #" macht Bestands-Member ohne `#` automatisch zu
+  gültigen Runden — die Whitelist-Regex (kein `#` in Namen) garantiert die
+  Eindeutigkeit des Splits. Bestmarken-Migration gratis: Liegt im Meta-Hash
+  kein `best`, liefert `ZSCORE lb <name>` den Alt-Member der Best-of-Ära als
+  bisherige Bestmarke → kein falsches `isNewBest` für Bestandsspieler.
+- **runId ≠ id — Suffix-Match statt Gleichheit:** Die Response trägt die nackte
+  `runId`, die top-Einträge den VOLLEN Member (`name#runId`). Wer im Frontend
+  `e.id === runId` vergleicht, markiert nie etwas (erster Suite-Lauf fing es).
+  Robuste Form: `e.id.endsWith('#' + runId)`.
+- **Store-Unit-Tests im Playwright-Runner:** Spec-Dateien laufen im
+  Node-Kontext — `import { MemoryStore } from '../lib/store.js'` testet Pfade,
+  die über HTTP nicht erreichbar sind (Trim auf 100 inkl. `rank: null` für
+  sofort getrimmte Runden, Alt-Member-Seeding). Kein Test-Framework-Zusatz nötig.
+- **Wespen-Amplitude beim Spawn fixieren:** Ein globaler Amplituden-Switch ab
+  Sekunde 40 ließe laufende Wespen an der Schwelle seitlich springen
+  (amp·sin ändert sich instant um bis zu 15 px). `it.amp` beim Spawn setzen —
+  Diskontinuität weg, „ab Sekunde 40" gilt für neu erscheinende Wespen.
+- **Balancing-Beleg v2.5:** Härteres Endgame (sqrt 1.75, Frenzy +10 %, Bad
+  14 %, Wespe ±65) drückte Profi auf ~1220–1270 und Casual auf ~390–550 —
+  beide neuen Bänder (950–1450 / 320–580) OHNE Stellschrauben-Drehen getroffen.
+  Der unseedete Casual-Bot bleibt varianzbehaftet: ein Lauf brach ohne
+  Score-Ausgabe ab (Test-Timeout), die Wiederholung saß im Band — Bot-Design,
+  nicht Produkt.
+- **Cleanup-Muster erneut bestätigt:** Live-Testdaten gezielt via
+  Namensmuster-ZREM + `DECRBY lb:rounds <n>` + `DEL lb:meta:/playing:`-Keys
+  (temporäres Skript mit .env.local + @upstash/redis, danach gelöscht) —
+  echte Scores blieben unangetastet auf dem Board.
+
 ## Kosten (Ist)
 
 | Posten | Menge | Ist |
@@ -135,8 +166,8 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
 | NB2-Sprites (Anker 1 + i2i-Serie 12, 0 Retries) | 13 Renders | 0,65 € |
 | NB2 Bomben-Sprite v2.1 (i2i auf Anker, 0 Retries) | 1 Render | 0,05 € |
 | Audio (SFX + Suno-Loop aus V1; Poff/Kling = WebAudio) | — | 0,00 € |
-| Nachträge v2.3 + v2.4 (reiner Code, keine Renders) | — | 0,00 € |
-| **Gesamt (inkl. v2.1–v2.4)** | | **0,70 €** (Cap 10 €) |
+| Nachträge v2.3 + v2.4 + v2.5 (reiner Code, keine Renders) | — | 0,00 € |
+| **Gesamt (inkl. v2.1–v2.5)** | | **0,70 €** (Cap 10 €) |
 
 ## Rang-Bug live (18.07., von Osman per Screenshot entdeckt)
 - **`zrank(key, member, {rev:true})` ist eine stille Falle:** ZRANK kennt keine
