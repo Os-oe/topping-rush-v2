@@ -38,7 +38,10 @@ test('Live v2.5: zwei Runden desselben Namens BEIDE in Top 10, Ränge listen-kon
   const firstPoll = board.waitForResponse((r) => r.url().includes('/api/leaderboard') && r.ok(), { timeout: 15_000 });
   await board.goto('/board');
   await expect(board.locator('#board')).toBeVisible();
-  await expect(board.locator('#btn-fullscreen')).toBeVisible();
+  // QA 18.07. (c): Button nur bei vorhandener Fullscreen-API (iPhone: versteckt)
+  const fsAvail = await board.evaluate(() => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled));
+  if (fsAvail) await expect(board.locator('#btn-fullscreen')).toBeVisible();
+  else await expect(board.locator('#btn-fullscreen')).toBeHidden();
   await expect(board.locator('.qr-tile canvas')).toHaveCount(1);
   await expect(board.locator('#board-rounds')).toContainText('Runden');
   const roundsBefore = Number(((await (await firstPoll).json()).rounds) || 0);

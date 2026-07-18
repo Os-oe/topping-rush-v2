@@ -269,7 +269,11 @@ test('/board: ohne Gate sofort sichtbar, QR-Kachel weiß, Daten ab Load gepollt'
   // v2.4: kein Start-Overlay mehr — Board + Daten ohne jede Geste
   await expect(page.locator('#board-start')).toHaveCount(0);
   await expect(page.locator('#board')).toBeVisible();
-  await expect(page.locator('#btn-fullscreen')).toBeVisible(); // dezenter Vollbild-Button
+  // QA 18.07. (Checkliste c): Vollbild-Button nur, wo die Fullscreen-API
+  // existiert — WebKit/iPhone hat keine (Playwright-WebKit ebenso) → versteckt
+  const fsAvail = await page.evaluate(() => !!(document.fullscreenEnabled || document.webkitFullscreenEnabled));
+  if (fsAvail) await expect(page.locator('#btn-fullscreen')).toBeVisible();
+  else await expect(page.locator('#btn-fullscreen')).toBeHidden(); // kein toter Button
 
   // QR: Canvas in weißer Kachel (nie invertiert)
   await expect(page.locator('.qr-tile canvas')).toHaveCount(1);

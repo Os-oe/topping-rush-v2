@@ -134,13 +134,25 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
-// v2.4: EINE Geste — Fullscreen + Wake Lock; das Board läuft davor schon
-$('btn-fullscreen').addEventListener('click', async () => {
-  try {
-    await document.documentElement.requestFullscreen?.();
-  } catch { /* Fullscreen optional */ }
-  await acquireWakeLock();
-});
+// v2.4: EINE Geste — Fullscreen + Wake Lock; das Board läuft davor schon.
+// QA 18.07. (Checkliste c): requestFullscreen existiert auf iPhone-Safari NICHT
+// (nur iPad) — ohne Feature-Detection wirkt der Button tot. Dann: Button
+// ausblenden, Wake Lock dezent bei der ersten Berührung (+ Load-Versuch,
+// die API braucht keine Geste; visibilitychange re-acquired ohnehin).
+const fsAvailable = !!(document.fullscreenEnabled || document.webkitFullscreenEnabled);
+if (fsAvailable) {
+  $('btn-fullscreen').addEventListener('click', async () => {
+    try {
+      await (document.documentElement.requestFullscreen?.() ??
+        document.documentElement.webkitRequestFullscreen?.());
+    } catch { /* Fullscreen optional */ }
+    await acquireWakeLock();
+  });
+} else {
+  $('btn-fullscreen').hidden = true;
+  acquireWakeLock();
+  window.addEventListener('pointerdown', () => acquireWakeLock(), { once: true });
+}
 
 function renderQr() {
   const url = location.origin + '/';
