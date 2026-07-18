@@ -159,6 +159,53 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
   (temporäres Skript mit .env.local + @upstash/redis, danach gelöscht) —
   echte Scores blieben unangetastet auf dem Board.
 
+## Cross-Device-QA (18.07., iPhone/WebKit + Android — Checkliste a–j)
+
+- **WebKit-Projekt kostet fast nichts, findet aber echte Gaps:** Die komplette
+  Suite lief auf Playwrights WebKit (iPhone 13) im ERSTEN Lauf 31/31 grün —
+  die Mechanik-/API-Tests sind engine-agnostisch. Die echten iOS-Fallen
+  (Fokus-Zoom, AudioContext-Suspend, fehlendes requestFullscreen) findet kein
+  bestehender Test — dafür braucht es die Checkliste als eigene Spec
+  (`tests/mobile-hardening.spec.js`, läuft in beiden Projekten).
+- **Playwright-WebKit hat `fullscreenEnabled: false` — wie das echte iPhone:**
+  Die Fullscreen-Feature-Detection (Button verstecken statt tot wirken lassen)
+  wird dadurch im iphone-Projekt GRATIS mitgetestet; Chromium-seitig deckt ein
+  `addInitScript`-Override denselben Pfad. Asserts auf `#btn-fullscreen`
+  müssen seitdem engine-bewusst sein (visible NUR wenn API existiert).
+- **Ein Testlauf pro Projekt = ein frischer Server:** `test:all` fährt mobile
+  und iphone bewusst als getrennte Invocations (je eigener webServer-Start,
+  eigenes Rate-Limit-Fenster). Beide Projekte in EINEM `playwright test`
+  hätten die Browser-Submits beider Suiten in EIN 10/60-s-Fenster gelegt.
+- **balance.spec bleibt Chromium-only (dokumentiert):** Die Bot-Profile sind
+  auf Chromium-Frame-Timing kalibriert (setInterval/rAF-Jitter weicht in
+  WebKit ab) — auf WebKit würden die Bänder Engine-Rauschen statt Balancing
+  messen. `testIgnore` im iphone-Projekt.
+- **`resize()` muss ALLE aus H/W abgeleiteten Anker neu setzen:** `cupY`
+  stammte aus `start()` — beim Adressleisten-Resize mid-round schwebte der
+  Becher. Muster: Resize re-ankert (cupY aus neuem H, X-Positionen
+  proportional bei Breiten-Änderung), Fall-Tempo läuft pro Item weiter —
+  Höhen-Delta < 120 px stört die Runde nicht.
+- **`touch-action` erbt nicht:** `body { touch-action: manipulation }` schützt
+  Buttons de facto (Ancestor-Kette), aber erst die explizite Regel auf
+  `button, input` macht es per computed style testbar und robust gegen
+  künftige Container mit eigenem touch-action.
+- **Zentrierter Fixed-Screen + Überlauf = unsichtbar abgeschnitten:**
+  `justify-content:center` schneidet bei zu kleinem Viewport OBEN UND UNTEN ab
+  (Tastatur auf 360er-Androids, lange Top-10-Liste). Fix-Muster:
+  `overflow-y:auto` auf dem Screen + `margin:auto` aufs Kind — zentriert bei
+  Platz, scrollbar bei Überlauf. Dazu Kompakt-Media-Query `max-height: 700px`
+  (iPhone-Safari-Viewport ist 664 px, nicht 844!).
+- **Live-Asserts auf Namen müssen Mehrfach-Runden erlauben:** Unter „jede
+  Runde zählt" stehen echte Spieler legitim mehrfach im Board (Osman 1519 +
+  1450 live entdeckt) — `toHaveCount(1)` auf einen Namen ist seit v2.5 falsch,
+  `not.toHaveCount(0)` + id-basierte Checks sind die robuste Form.
+- **iOS-Grundhygiene, jetzt im Code verankert:** Inputs ≥ 16 px (Admin-Inputs
+  hatten UA-Default ~13 px → Fokus-Zoom), AudioContext-Resume via
+  visibilitychange/focus/pageshow + Guard vor jedem play()/event() (iOS
+  liefert auch 'interrupted'), `viewport-fit=cover` auch auf /board
+  (user-scalable=no dort bewusst NICHT — Board wird gelesen, Pinch-Zoom ist
+  Accessibility), `navigator.vibrate?.()` überall optional gechained.
+
 ## Kosten (Ist)
 
 | Posten | Menge | Ist |
