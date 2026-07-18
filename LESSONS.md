@@ -232,3 +232,16 @@ wiederverwendbar für künftige Reskins/Sprite-Serien. V1-Lessons bleiben gülti
   wird nach jedem Submit angeglichen.
 - Live-Testdaten auf einem Board mit echten Scores NIE per Admin-Reset
   räumen — gezielt `ZREM` + `DECRBY lb:rounds` (cleanup-Skript-Muster).
+
+## Android-Swipe-Bug (18.07., User-Report: Tippen ging, Wischen nicht)
+- **`touch-action: manipulation` ist für Spielflächen die halbe Wahrheit:** Es
+  stoppt nur Doppeltap-Zoom, NICHT die Pan-/Scroll-Gestenerkennung. Android-
+  Chrome deutete horizontales Wischen als Pan → `pointercancel` → keine
+  pointermove-Events mehr. Safari war nachsichtiger (deshalb „iPhone geht,
+  Android nicht"). Spielflächen brauchen **`touch-action: none`** (nur dort —
+  UI-Screens behalten manipulation für natürliches Scrollen) + `setPointerCapture`
+  im pointerdown als Robustheits-Netz.
+- **Tap-Tests beweisen keine Drags:** Die Suite hatte `.tap()`-Tests, der Bug
+  lag im Gesten-Pfad. Echte Wisch-Regression nur via CDP
+  `Input.dispatchTouchEvent`-Sequenz (touchStart→12×touchMove→touchEnd,
+  Chromium-only) — jetzt Test (k) in mobile-hardening.spec.js.
