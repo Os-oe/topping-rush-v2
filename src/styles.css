@@ -137,6 +137,15 @@ button, input { touch-action: manipulation; }
 .top3-row.medal-2 { color: #6B6560; }
 .top3-row.medal-3 { color: #A85B2A; }
 .foot { display: flex; flex-direction: column; gap: 6px; align-items: center; color: var(--ink-soft); font-size: 0.75rem; }
+/* QA 18.07.: kurze Viewports (iPhone-Safari ~664 px, 640er-Androids) — Start
+   kompakter, damit Banner→PLAY→Top3→Footer OHNE Scroll komplett sichtbar sind */
+@media (max-height: 700px) {
+  .start-inner { gap: 11px; padding-top: 8px; }
+  .logo { font-size: clamp(2.3rem, 11vw, 3rem); }
+  .lale { height: 22px; margin: -4px 0; }
+  .top3-row { padding: 5px 14px; }
+  .top3-title { margin-bottom: 5px; }
+}
 .linklike { background: none; border: none; color: inherit; text-decoration: underline; cursor: pointer; font-size: 0.75rem; font-family: 'Nunito', sans-serif; font-weight: 600; }
 .osai-mark { height: 13px; vertical-align: -2px; }
 
